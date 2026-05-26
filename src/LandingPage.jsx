@@ -151,11 +151,9 @@ function Navbar() {
    Hero
 ───────────────────────────────────── */
 
-const HERO_IMAGE = 'https://lh3.googleusercontent.com/aida-public/AB6AXuBP9njHuVa2JQ6gsP61XmF0ePJ3p5CwSUXnDCb3gDbyFx2Q3S1OmJv_TUD4GkFsF0fnNJofDlHfX7cvE7LtUFJz6UBEousVdXLLNWRXo1CQ6RWLdH_8jQkpLK3gIFlLo0imdMEHVaxWglMkB0F-alajChN5QATcW1wevvBF-rm1rT6PxUc6_8STrXZLT-_nt5PZHwRUnvs5Pub5e3pBmt8VTe9UOEBDSh7kxMgwDwD7cekSKWpiUUiVpaCH0Q1AeUJFOS4zFeURLsbW'
+const HERO_IMAGE = '../src/image 15.png'
 
 function Hero() {
-  const imgRef = useParallax(0.1)
-
   return (
     <section className="hero">
       <div className="hero__inner">
@@ -169,8 +167,19 @@ function Hero() {
             strategic frameworks through clinical observation and synthesis.
           </p>
           <div className="hero__actions" data-reveal="up" data-delay="200">
-            <button className="hero__cta">Start Engagement</button>
-            <div className="hero__trust">
+
+            <button className="hero__cta hero__cta--primary">
+              Start Engagement
+            </button>
+
+            <button className="hero__cta hero__cta--outline">
+              Start Engagement
+            </button>
+
+
+
+
+            {/* <div className="hero__trust">
               <div className="hero__trust-top">
                 <span className="hero__trust-label">Trusted by:</span>
                 <div className="hero__trust-logos">
@@ -179,11 +188,11 @@ function Hero() {
                   <span>BlackRock</span>
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
         <div className="hero__right" data-reveal="fade" data-delay="160">
-          <img ref={imgRef} src={HERO_IMAGE} alt="Atmospheric research space" className="hero__img" />
+          <img src={HERO_IMAGE} alt="Atmospheric research space" className="hero__img" />
           <div className="hero__img-overlay" aria-hidden="true" />
         </div>
       </div>
@@ -328,11 +337,11 @@ function SelectedEvidence() {
 ───────────────────────────────────── */
 
 const STEPS = [
-  { num: '01', title: 'Discovery',  desc: 'Audit of existing intelligence and deep stakeholder alignment sessions.',         active: true  },
-  { num: '02', title: 'Framing',    desc: 'Constructing the research hypothesis and bespoke methodology design.',            active: false },
-  { num: '03', title: 'Field Work', desc: 'Active ethnography, expert interviews, and clinical data acquisition.',           active: false },
-  { num: '04', title: 'Synthesis',  desc: 'Pattern identification, behavioral mapping, and thematic extraction.',            active: false },
-  { num: '05', title: 'Strategy',   desc: 'Implementation roadmaps, design principles, and strategic briefings.',            active: false },
+  { num: '01', title: 'Discovery', desc: 'Audit of existing intelligence and deep stakeholder alignment sessions.', active: true },
+  { num: '02', title: 'Framing', desc: 'Constructing the research hypothesis and bespoke methodology design.', active: false },
+  { num: '03', title: 'Field Work', desc: 'Active ethnography, expert interviews, and clinical data acquisition.', active: false },
+  { num: '04', title: 'Synthesis', desc: 'Pattern identification, behavioral mapping, and thematic extraction.', active: false },
+  { num: '05', title: 'Strategy', desc: 'Implementation roadmaps, design principles, and strategic briefings.', active: false },
 ]
 
 const STEP_DELAYS = [undefined, '80', '160', '280', '360']
