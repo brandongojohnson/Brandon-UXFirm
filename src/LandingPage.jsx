@@ -1,4 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
+import { onAuthStateChanged, signOut } from 'firebase/auth'
+import { auth } from './firebase'
+import AuthModal from './AuthModal'
 import './index.css'
 
 /* ─────────────────────────────────────
@@ -130,6 +133,9 @@ const NAV_LINKS = ['ARCHIVE', 'INDEX', 'THEMES', 'LAB']
 
 function Navbar() {
   const [scrolled, setScrolled] = useState(false)
+  const [user, setUser]         = useState(null)
+  const [showAuth, setShowAuth] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 100)
@@ -137,22 +143,58 @@ function Navbar() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  useEffect(() => onAuthStateChanged(auth, setUser), [])
+
+  useEffect(() => {
+    if (!showMenu) return
+    const close = () => setShowMenu(false)
+    window.addEventListener('click', close)
+    return () => window.removeEventListener('click', close)
+  }, [showMenu])
+
   return (
-    <nav className={`navbar${scrolled ? ' navbar--scrolled' : ''}`}>
-      <div className="navbar__inner">
-        <div className="navbar__left">
-          <a className="navbar__logo" href="#">Methodic</a>
-          <span className="navbar__sep" aria-hidden="true" />
-          <span className="navbar__tagline">Curated Selection</span>
+    <>
+      <nav className={`navbar${scrolled ? ' navbar--scrolled' : ''}`}>
+        <div className="navbar__inner">
+          <div className="navbar__left">
+            <a className="navbar__logo" href="#">Methodic</a>
+            <span className="navbar__sep" aria-hidden="true" />
+            <span className="navbar__tagline">Curated Selection</span>
+          </div>
+          <div className="navbar__links">
+            {NAV_LINKS.map((l) => (
+              <a key={l} href="#" className={l === 'INDEX' ? 'active' : ''}>{l}</a>
+            ))}
+          </div>
+          <div className="navbar__auth">
+            <button className="navbar__cta">READ JOURNAL</button>
+            {user ? (
+              <div className="navbar__user"
+                onClick={(e) => { e.stopPropagation(); setShowMenu((m) => !m) }}>
+                <div className="navbar__avatar">
+                  {user.photoURL
+                    ? <img src={user.photoURL} alt="" />
+                    : (user.displayName || user.email || 'U')[0].toUpperCase()}
+                </div>
+                {showMenu && (
+                  <div className="navbar__user-menu">
+                    <span className="navbar__user-email">{user.email}</span>
+                    <button className="navbar__signout" onClick={() => signOut(auth)}>
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button className="navbar__signin" onClick={() => setShowAuth(true)}>
+                Sign In
+              </button>
+            )}
+          </div>
         </div>
-        <div className="navbar__links">
-          {NAV_LINKS.map((l) => (
-            <a key={l} href="#" className={l === 'INDEX' ? 'active' : ''}>{l}</a>
-          ))}
-        </div>
-        <button className="navbar__cta">READ JOURNAL</button>
-      </div>
-    </nav>
+      </nav>
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
+    </>
   )
 }
 
