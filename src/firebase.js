@@ -5,13 +5,14 @@ import { getDatabase } from 'firebase/database'
 // Paste your config from:
 // Firebase Console → Project Settings → Your apps → SDK setup and configuration
 const firebaseConfig = {
-  apiKey:            'YOUR_API_KEY',
-  authDomain:        'YOUR_PROJECT.firebaseapp.com',
-  databaseURL:       'https://YOUR_PROJECT-default-rtdb.firebaseio.com',
-  projectId:         'YOUR_PROJECT_ID',
-  storageBucket:     'YOUR_PROJECT.appspot.com',
-  messagingSenderId: 'YOUR_SENDER_ID',
-  appId:             'YOUR_APP_ID',
+  apiKey: "AIzaSyDA1OEn5luPRzm-fn7bH8NyQ-8bxoXZAqE",
+  authDomain: "portfolio-2716c.firebaseapp.com",
+  databaseURL: "https://portfolio-2716c-default-rtdb.firebaseio.com",
+  projectId: "portfolio-2716c",
+  storageBucket: "portfolio-2716c.firebasestorage.app",
+  messagingSenderId: "787215559019",
+  appId: "1:787215559019:web:f3b3e45b721997d89c842e",
+  measurementId: "G-GZC29TQDJZ"
 }
 
 const app = initializeApp(firebaseConfig)
