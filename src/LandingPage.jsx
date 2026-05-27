@@ -271,7 +271,7 @@ function Capabilities() {
 
 const FEATURED_IMG = 'https://lh3.googleusercontent.com/aida-public/AB6AXuCZlSIJiUBFMS9E-glpg7cv2SHV5_R7bTWFe_aJZRpj8RISyUtD2YiFCc1-bkm0pPW3Rnv0CE_19FwTumY20DceswH08FFFHyTrLlx2KUKf2eBWRlHfax7r-rAG-dTYGEk_Q4xNZPOomt2aSQBFIiNjEX0SxzS0Y_CH-BkEkeCx6iad5tYskQdIDByYiCnidbto0w18-lZ9yriW395_mmBPaifWlYdPqM1Ccrlr8Wt1nqq5luPjKck3UYqby7a4jptskxkkjOu1YPHZ'
 
-function SelectedEvidence() {
+function SelectedEvidence({ onNavigate }) {
   return (
     <section className="evidence">
       <div className="evidence__inner">
@@ -304,7 +304,8 @@ function SelectedEvidence() {
                 <span className="evidence__stat-num"><CountUp to={12} suffix="k" /></span>
                 <span className="evidence__stat-label">Data Points Synthesized</span>
               </div>
-              <a href="#" className="evidence__explore">
+              <a href="#" className="evidence__explore"
+                onClick={(e) => { e.preventDefault(); onNavigate?.('project') }}>
                 Explore Project
                 <span className="material-symbols-outlined">north_east</span>
               </a>
@@ -513,7 +514,7 @@ function Footer() {
    LandingPage
 ───────────────────────────────────── */
 
-export default function LandingPage() {
+export default function LandingPage({ onNavigate }) {
   useReveal()
   useParallax()
 
@@ -524,7 +525,7 @@ export default function LandingPage() {
       <main className="main">
         <Hero />
         <Capabilities />
-        <SelectedEvidence />
+        <SelectedEvidence onNavigate={onNavigate} />
         <MethodicCycle />
         <Team />
         <ContactSection />
