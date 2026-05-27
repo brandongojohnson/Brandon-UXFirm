@@ -33,26 +33,35 @@ function useReveal() {
   }, [])
 }
 
-function useParallax(speed = 0.12) {
-  const ref = useRef(null)
-
+function useParallax() {
   useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const container = el.parentElement
+    const els = Array.from(document.querySelectorAll('[data-parallax]'))
+
+    // offsetTop traversal ignores CSS transforms, giving stable layout positions
+    function docTop(el) {
+      let t = 0
+      while (el) { t += el.offsetTop; el = el.offsetParent }
+      return t
+    }
+
+    const anchors = els.map((el) => {
+      const p = el.parentElement
+      return { top: docTop(p), height: p.offsetHeight }
+    })
 
     const tick = () => {
-      const rect = container.getBoundingClientRect()
-      const offset = (rect.top + rect.height / 2 - window.innerHeight / 2) * speed
-      el.style.transform = `translateY(${offset}px)`
+      const vc = window.scrollY + window.innerHeight / 2
+      els.forEach((el, i) => {
+        const speed = parseFloat(el.dataset.parallax) || 0.1
+        const center = anchors[i].top + anchors[i].height / 2
+        el.style.transform = `translateY(${(center - vc) * speed}px)`
+      })
     }
 
     window.addEventListener('scroll', tick, { passive: true })
     tick()
     return () => window.removeEventListener('scroll', tick)
-  }, [speed])
-
-  return ref
+  }, [])
 }
 
 /* ─────────────────────────────────────
@@ -160,7 +169,7 @@ function Hero() {
         <div className="hero__left">
           <div className="hero__intro" data-reveal="up">
             <span className="hero__eyebrow">Institutional Research</span>
-            <h1 className="hero__headline">Human insight for the architects.</h1>
+            <h1 className="hero__headline">Human insight for the disrupters.</h1>
           </div>
           <p className="hero__body" data-reveal="up" data-delay="120">
             We bridge the gap between abstract user behavior and actionable
@@ -263,8 +272,6 @@ function Capabilities() {
 const FEATURED_IMG = 'https://lh3.googleusercontent.com/aida-public/AB6AXuCZlSIJiUBFMS9E-glpg7cv2SHV5_R7bTWFe_aJZRpj8RISyUtD2YiFCc1-bkm0pPW3Rnv0CE_19FwTumY20DceswH08FFFHyTrLlx2KUKf2eBWRlHfax7r-rAG-dTYGEk_Q4xNZPOomt2aSQBFIiNjEX0SxzS0Y_CH-BkEkeCx6iad5tYskQdIDByYiCnidbto0w18-lZ9yriW395_mmBPaifWlYdPqM1Ccrlr8Wt1nqq5luPjKck3UYqby7a4jptskxkkjOu1YPHZ'
 
 function SelectedEvidence() {
-  const featuredImgRef = useParallax(0.08)
-
   return (
     <section className="evidence">
       <div className="evidence__inner">
@@ -274,7 +281,7 @@ function SelectedEvidence() {
         </div>
 
         <div className="evidence__featured" data-reveal="scale" data-delay="80">
-          <img ref={featuredImgRef} src={FEATURED_IMG} alt="Strategic planning session" className="evidence__featured-img" />
+          <img data-parallax="0.06" src={FEATURED_IMG} alt="Strategic planning session" className="evidence__featured-img" />
           <div className="evidence__featured-body">
             <div className="evidence__featured-tag" data-reveal="up" data-delay="200">
               <span className="evidence__tag-line" aria-hidden="true" />
@@ -414,7 +421,7 @@ function Team() {
           {MEMBERS.map((m, i) => (
             <div className="team-card" key={m.name} data-reveal="up" data-delay={MEMBER_DELAYS[i]}>
               <div className="team-card__portrait">
-                <img src={m.img} alt={m.name} className="team-card__img" />
+                <img data-parallax="0.05" src={m.img} alt={m.name} className="team-card__img" />
               </div>
               <div className="team-card__info">
                 <h6 className="team-card__name">{m.name}</h6>
@@ -508,6 +515,7 @@ function Footer() {
 
 export default function LandingPage() {
   useReveal()
+  useParallax()
 
   return (
     <div className="app">
