@@ -1,6 +1,6 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
-import { ref as dbRef, onValue } from 'firebase/database'
+import { ref as dbRef, onValue, set } from 'firebase/database'
 import { auth, db } from './firebase'
 import AuthModal from './AuthModal'
 import './index.css'
@@ -46,16 +46,38 @@ function toArr(v) {
   return Array.isArray(v) ? v : Object.values(v)
 }
 
-function useProjectData() {
+function useCaseStudies() {
+  const [studies, setStudies] = useState(undefined)
+
+  useEffect(() => {
+    return onValue(
+      dbRef(db, 'UXP'),
+      (snap) => {
+        const val = snap.val()
+        if (val) {
+          const list = Object.keys(val).sort()
+          setStudies(list)
+        } else {
+          setStudies([])
+        }
+      },
+      () => setStudies([])
+    )
+  }, [])
+
+  return studies
+}
+
+function useProjectData(caseId) {
   const [raw, setRaw] = useState(undefined)
 
   useEffect(() => {
     return onValue(
-      dbRef(db, 'UXP/case-01'),
+      dbRef(db, `UXP/${caseId}`),
       (snap) => setRaw(snap.val()),
       () => setRaw(null)
     )
-  }, [])
+  }, [caseId])
 
   const data = {
     title:               raw?.title,
@@ -105,7 +127,7 @@ function ScrollProgress() {
 
 const NAV_LINKS = ['ARCHIVE', 'INDEX', 'THEMES', 'LAB']
 
-function Navbar({ onBack }) {
+function Navbar({ onBack, caseId, setCaseId, studies, onEdit }) {
   const [scrolled, setScrolled] = useState(false)
   const [user, setUser]         = useState(null)
   const [showAuth, setShowAuth] = useState(false)
@@ -126,6 +148,8 @@ function Navbar({ onBack }) {
     return () => window.removeEventListener('click', close)
   }, [showMenu])
 
+  const isAdmin = user?.email === 'brandon.johnson0416@gmail.com'
+
   return (
     <>
       <nav className={`navbar${scrolled ? ' navbar--scrolled' : ''}`}>
@@ -134,7 +158,13 @@ function Navbar({ onBack }) {
             <a className="navbar__logo" href="#"
               onClick={(e) => { e.preventDefault(); onBack() }}>Methodic</a>
             <span className="navbar__sep" aria-hidden="true" />
-            <span className="navbar__tagline">Case Study</span>
+            {studies && studies.length > 0 && (
+              <select className="navbar__case-select" value={caseId} onChange={(e) => setCaseId(e.target.value)}>
+                {studies.map((id) => (
+                  <option key={id} value={id}>{id}</option>
+                ))}
+              </select>
+            )}
           </div>
           <div className="navbar__links">
             {NAV_LINKS.map((l) => (
@@ -142,6 +172,12 @@ function Navbar({ onBack }) {
             ))}
           </div>
           <div className="navbar__auth">
+            {isAdmin && (
+              <button className="navbar__cta" onClick={onEdit}>
+                <span className="material-symbols-outlined">edit</span>
+                EDIT
+              </button>
+            )}
             <button className="navbar__cta" onClick={onBack}>BACK TO INDEX</button>
             {user ? (
               <div className="navbar__user"
@@ -439,15 +475,158 @@ function CTA({ onBack }) {
   )
 }
 
+function EField({ label, children }) {
+  return (
+    <div className="em-field">
+      <label className="em-label">{label}</label>
+      {children}
+    </div>
+  )
+}
+
+function ESectionHead({ icon, title }) {
+  return (
+    <div className="em-section-head">
+      <span className="material-symbols-outlined">{icon}</span>
+      {title}
+    </div>
+  )
+}
+
+function EditModal({ data, caseId, studies, onClose, onSave, onCreateNew }) {
+  const [form, setForm] = useState(data)
+  const [saving, setSaving] = useState(false)
+
+  const set = (field, value) => setForm((prev) => ({ ...prev, [field]: value }))
+
+  const handleSave = async () => {
+    setSaving(true)
+    try { await onSave(caseId, form) } finally { setSaving(false) }
+  }
+
+  const handleCreateNew = async () => {
+    const nextNum = Math.max(...studies.map((s) => parseInt(s.split('-')[1]) || 0), 0) + 1
+    const newId = `case-${String(nextNum).padStart(2, '0')}`
+    setSaving(true)
+    try { await onCreateNew(newId, form) } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="auth-backdrop" onClick={onClose}>
+      <div className="em-modal" onClick={(e) => e.stopPropagation()}>
+
+        <div className="em-header">
+          <div className="em-header__left">
+            <span className="em-header__eyebrow">Admin</span>
+            <h2 className="em-header__title">Edit Case Study</h2>
+          </div>
+          <button className="em-close" onClick={onClose}>
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div className="em-body">
+
+          <section className="em-section">
+            <ESectionHead icon="title" title="Overview" />
+            <div className="em-grid em-grid--2">
+              <EField label="Eyebrow">
+                <input className="em-input" value={form.eyebrow || ''} onChange={(e) => set('eyebrow', e.target.value)} />
+              </EField>
+              <EField label="Title">
+                <input className="em-input" value={form.title || ''} onChange={(e) => set('title', e.target.value)} />
+              </EField>
+            </div>
+            <EField label="Subtitle">
+              <textarea className="em-input em-input--area" rows="3" value={form.subtitle || ''} onChange={(e) => set('subtitle', e.target.value)} />
+            </EField>
+          </section>
+
+          <section className="em-section">
+            <ESectionHead icon="photo_camera" title="Image" />
+            <EField label="URL">
+              <input className="em-input" type="url" value={form.imageUrl || ''} onChange={(e) => set('imageUrl', e.target.value)} />
+            </EField>
+            <EField label="Caption">
+              <input className="em-input" value={form.imageCaption || ''} onChange={(e) => set('imageCaption', e.target.value)} />
+            </EField>
+          </section>
+
+          <section className="em-section">
+            <ESectionHead icon="flag" title="Challenge" />
+            <EField label="Heading">
+              <input className="em-input" value={form.challengeHeading || ''} onChange={(e) => set('challengeHeading', e.target.value)} />
+            </EField>
+            <EField label="Body — one paragraph per line">
+              <textarea className="em-input em-input--area" rows="6" value={(form.challengeBody || []).join('\n')} onChange={(e) => set('challengeBody', e.target.value.split('\n'))} />
+            </EField>
+          </section>
+
+          <section className="em-section">
+            <ESectionHead icon="view_headline" title="Section Headings" />
+            <div className="em-grid em-grid--2">
+              <EField label="Approach">
+                <input className="em-input" value={form.approachHeading || ''} onChange={(e) => set('approachHeading', e.target.value)} />
+              </EField>
+              <EField label="Findings">
+                <input className="em-input" value={form.findingsHeading || ''} onChange={(e) => set('findingsHeading', e.target.value)} />
+              </EField>
+              <EField label="Deliverables">
+                <input className="em-input" value={form.deliverablesHeading || ''} onChange={(e) => set('deliverablesHeading', e.target.value)} />
+              </EField>
+              <EField label="Outcomes">
+                <input className="em-input" value={form.outcomesHeading || ''} onChange={(e) => set('outcomesHeading', e.target.value)} />
+              </EField>
+            </div>
+            <EField label="Deliverables Description">
+              <textarea className="em-input em-input--area" rows="2" value={form.deliverablesDesc || ''} onChange={(e) => set('deliverablesDesc', e.target.value)} />
+            </EField>
+          </section>
+
+        </div>
+
+        <div className="em-footer">
+          <button className="em-btn em-btn--ghost" onClick={onClose}>Cancel</button>
+          <div className="em-footer__right">
+            {caseId && (
+              <button className="em-btn em-btn--primary" onClick={handleSave} disabled={saving}>
+                {saving ? 'Saving…' : 'Save Changes'}
+              </button>
+            )}
+            <button className="em-btn em-btn--outline" onClick={handleCreateNew} disabled={saving}>
+              {saving ? 'Creating…' : 'Create New Study'}
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  )
+}
+
 /* ─────────────────────────────────────
    ProjectDetail
 ───────────────────────────────────── */
 
 export default function ProjectDetail({ onBack }) {
-  const { data, loading } = useProjectData()
+  const studies = useCaseStudies()
+  const [caseId, setCaseId] = useState('case-01')
+  const { data, loading } = useProjectData(caseId)
+  const [showEdit, setShowEdit] = useState(false)
 
   useLayoutEffect(() => { window.scrollTo(0, 0) }, [])
   useReveal(!loading)
+
+  const handleSaveCase = async (id, formData) => {
+    await set(dbRef(db, `UXP/${id}`), formData)
+    setShowEdit(false)
+  }
+
+  const handleCreateNewCase = async (newId, formData) => {
+    await set(dbRef(db, `UXP/${newId}`), formData)
+    setCaseId(newId)
+    setShowEdit(false)
+  }
 
   if (loading) {
     return (
@@ -460,7 +639,13 @@ export default function ProjectDetail({ onBack }) {
   return (
     <div className="app">
       <ScrollProgress />
-      <Navbar onBack={onBack} />
+      <Navbar
+        onBack={onBack}
+        caseId={caseId}
+        setCaseId={setCaseId}
+        studies={studies}
+        onEdit={() => setShowEdit(true)}
+      />
 
       <main className="main">
         <ProjectHeader data={data} />
@@ -473,6 +658,16 @@ export default function ProjectDetail({ onBack }) {
         <CTA onBack={onBack} />
       </main>
       <Footer />
+      {showEdit && (
+        <EditModal
+          data={data}
+          caseId={caseId}
+          studies={studies || []}
+          onClose={() => setShowEdit(false)}
+          onSave={handleSaveCase}
+          onCreateNew={handleCreateNewCase}
+        />
+      )}
     </div>
   )
 }
