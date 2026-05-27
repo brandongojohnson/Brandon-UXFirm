@@ -331,46 +331,39 @@ img { display: block; max-width: 100%; }
   max-width: 512px;
 }
 
-.hero__cta.test{
-  color: white;
-  background: none;
-}
-
 .hero__actions {
   display: flex;
-  flex-direction: row;
-  gap: 15px;
+  align-items: center;
+  gap: 12px;
 }
 
 .hero__cta {
   align-self: flex-start;
-  color: white;
-  padding: 20px 48px;
+  padding: 14px 36px;
   font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.1em;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   border: none;
-  border-radius: 10px;
-  /* transition: background 0.5s; */
+  cursor: pointer;
+  transition: background 0.25s var(--ease-out), color 0.25s var(--ease-out), border-color 0.25s var(--ease-out);
 }
 
-/* Solid button */
 .hero__cta--primary {
-  background: rgba(78, 78, 78, 0.5);
-  
+  background: var(--primary);
+  color: var(--bg);
 }
 
-/* Outlined button */
+.hero__cta--primary:hover { background: var(--primary-container); }
+
 .hero__cta--outline {
   background: transparent;
-  border: 1.5px solid rgba(78, 78, 78, 0.5);
-  color: var(--on-sv-60);
-  letter-spacing: .18em;
+  border: 1px solid var(--hairline);
+  color: var(--on-sv-80);
 }
 
-.hero__cta:hover { background: #ffffff; }
+.hero__cta--outline:hover { border-color: var(--primary); color: var(--primary); }
 
 .hero__trust {
   padding-top: 32px;
@@ -1738,3 +1731,137 @@ img { display: block; max-width: 100%; }
   color: var(--on-sv-80);
 }
 .em-btn--outline:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+
+.em-hint {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--on-sv-60);
+  line-height: 1.5;
+}
+
+.em-input--code {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.em-error {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: #e07070;
+  padding: 8px 12px;
+  border: 1px solid rgba(224, 112, 112, 0.3);
+  background: rgba(224, 112, 112, 0.06);
+}
+
+.em-preview {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.em-preview__id {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--on-sv-60);
+}
+
+.em-preview__title {
+  font-family: var(--font-serif);
+  font-size: 1.125rem;
+  font-weight: 300;
+  color: var(--primary);
+  letter-spacing: -0.02em;
+}
+
+.em-preview__sub {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--on-sv-70);
+  line-height: 1.55;
+}
+
+.em-preview__keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.em-preview__key {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--on-sv-60);
+  background: var(--surface-high);
+  padding: 3px 8px;
+  border-radius: 2px;
+}
+
+/* ─────────────────────────────────────
+   Evidence admin controls
+───────────────────────────────────── */
+
+.ev-admin-add {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: 1px solid var(--hairline);
+  padding: 5px 12px;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--on-sv-60);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.ev-admin-add:hover { color: var(--primary); border-color: var(--primary); }
+.ev-admin-add .material-symbols-outlined { font-size: 14px; }
+
+.ev-delete {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  background: rgba(19, 19, 19, 0.75);
+  border: 1px solid var(--hairline);
+  color: var(--on-sv-60);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+  backdrop-filter: blur(4px);
+}
+
+.ev-delete:hover { color: #e07070; border-color: rgba(224, 112, 112, 0.5); }
+.ev-delete .material-symbols-outlined { font-size: 16px; }
+
+.ev-delete--card {
+  top: 12px;
+  right: 12px;
+  background: var(--surface-low);
+}
+
+.ev-loading,
+.ev-empty {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--on-sv-40);
+  padding: 48px 0;
+  text-align: center;
+}
+
+.evidence__featured { position: relative; }
+.evidence__card { position: relative; }

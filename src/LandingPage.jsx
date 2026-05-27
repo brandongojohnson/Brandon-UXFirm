@@ -1,8 +1,39 @@
 import { useState, useEffect, useRef } from 'react'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
-import { auth } from './firebase'
+import { ref as dbRef, onValue, set, remove } from 'firebase/database'
+import { auth, db } from './firebase'
 import AuthModal from './AuthModal'
 import './index.css'
+
+const ADMIN_EMAIL = 'brandon.johnson0416@gmail.com'
+
+function toArr(v) {
+  if (!v) return []
+  return Array.isArray(v) ? v : Object.values(v)
+}
+
+function useAllStudies() {
+  const [studies, setStudies] = useState(undefined)
+  useEffect(() => {
+    return onValue(
+      dbRef(db, 'UXP'),
+      (snap) => {
+        const val = snap.val()
+        if (val) {
+          setStudies(
+            Object.entries(val)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([id, data]) => ({ id, ...data, outcomes: toArr(data.outcomes) }))
+          )
+        } else {
+          setStudies([])
+        }
+      },
+      () => setStudies([])
+    )
+  }, [])
+  return studies
+}
 
 /* ─────────────────────────────────────
    Hooks
@@ -218,28 +249,8 @@ function Hero() {
             strategic frameworks through clinical observation and synthesis.
           </p>
           <div className="hero__actions" data-reveal="up" data-delay="200">
-
-            <button className="hero__cta hero__cta--primary">
-              Start Engagement
-            </button>
-
-            <button className="hero__cta hero__cta--outline">
-              Start Engagement
-            </button>
-
-
-
-
-            {/* <div className="hero__trust">
-              <div className="hero__trust-top">
-                <span className="hero__trust-label">Trusted by:</span>
-                <div className="hero__trust-logos">
-                  <span>Vanguard</span>
-                  <span>Goldman</span>
-                  <span>BlackRock</span>
-                </div>
-              </div>
-            </div> */}
+            <button className="hero__cta hero__cta--primary">Start Engagement</button>
+            <button className="hero__cta hero__cta--outline">View Archive</button>
           </div>
         </div>
         <div className="hero__right" data-reveal="fade" data-delay="160">
@@ -308,75 +319,224 @@ function Capabilities() {
 }
 
 /* ─────────────────────────────────────
+   AddStudyModal
+───────────────────────────────────── */
+
+function AddStudyModal({ studies, onClose, onSave }) {
+  const [json, setJson]       = useState('')
+  const [parsed, setParsed]   = useState(null)
+  const [error, setError]     = useState(null)
+  const [saving, setSaving]   = useState(false)
+
+  const handleParse = () => {
+    setError(null)
+    setParsed(null)
+    try {
+      const obj = JSON.parse(json)
+      if (!obj.title) { setError('JSON must include a "title" field.'); return }
+      setParsed(obj)
+    } catch {
+      setError('Invalid JSON — check for syntax errors.')
+    }
+  }
+
+  const handleSave = async () => {
+    if (!parsed) return
+    setSaving(true)
+    try { await onSave(parsed) } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="auth-backdrop" onClick={onClose}>
+      <div className="em-modal" onClick={(e) => e.stopPropagation()}>
+
+        <div className="em-header">
+          <div className="em-header__left">
+            <span className="em-header__eyebrow">Admin</span>
+            <h2 className="em-header__title">Add Case Study</h2>
+          </div>
+          <button className="em-close" onClick={onClose}>
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div className="em-body">
+          <section className="em-section">
+            <div className="em-section-head">
+              <span className="material-symbols-outlined">data_object</span>
+              Paste JSON
+            </div>
+            <p className="em-hint">
+              Paste a valid case study JSON matching the schema. The ID is auto-assigned.
+            </p>
+            <textarea
+              className="em-input em-input--area em-input--code"
+              rows="16"
+              placeholder={'{\n  "title": "...",\n  "subtitle": "...",\n  ...\n}'}
+              value={json}
+              onChange={(e) => { setJson(e.target.value); setParsed(null); setError(null) }}
+              spellCheck={false}
+            />
+            {error && <p className="em-error">{error}</p>}
+          </section>
+
+          {parsed && (
+            <section className="em-section">
+              <div className="em-section-head">
+                <span className="material-symbols-outlined">check_circle</span>
+                Preview
+              </div>
+              <div className="em-preview">
+                <span className="em-preview__id">
+                  ID: case-{String(Math.max(...studies.map((s) => parseInt(s.id.split('-')[1]) || 0), 0) + 1).padStart(2, '0')}
+                </span>
+                <p className="em-preview__title">{parsed.title}</p>
+                {parsed.subtitle && <p className="em-preview__sub">{parsed.subtitle}</p>}
+                <div className="em-preview__keys">
+                  {Object.keys(parsed).map((k) => (
+                    <span key={k} className="em-preview__key">{k}</span>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+        </div>
+
+        <div className="em-footer">
+          <button className="em-btn em-btn--ghost" onClick={onClose}>Cancel</button>
+          <div className="em-footer__right">
+            <button className="em-btn em-btn--outline" onClick={handleParse}>
+              Parse JSON
+            </button>
+            <button className="em-btn em-btn--primary" onClick={handleSave} disabled={!parsed || saving}>
+              {saving ? 'Creating…' : 'Create Study'}
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────
    SelectedEvidence
 ───────────────────────────────────── */
 
-const FEATURED_IMG = 'https://lh3.googleusercontent.com/aida-public/AB6AXuCZlSIJiUBFMS9E-glpg7cv2SHV5_R7bTWFe_aJZRpj8RISyUtD2YiFCc1-bkm0pPW3Rnv0CE_19FwTumY20DceswH08FFFHyTrLlx2KUKf2eBWRlHfax7r-rAG-dTYGEk_Q4xNZPOomt2aSQBFIiNjEX0SxzS0Y_CH-BkEkeCx6iad5tYskQdIDByYiCnidbto0w18-lZ9yriW395_mmBPaifWlYdPqM1Ccrlr8Wt1nqq5luPjKck3UYqby7a4jptskxkkjOu1YPHZ'
+const CARD_DELAYS = [undefined, '80', '160', '280', '360']
 
-function SelectedEvidence({ onNavigate }) {
+function SelectedEvidence({ onNavigate, studies, isAdmin, onAddStudy, onDeleteStudy }) {
+  useEffect(() => {
+    if (!studies) return
+    const observer = new IntersectionObserver(
+      (entries) => entries.forEach((entry) => {
+        if (entry.isIntersecting) { entry.target.classList.add('is-visible'); observer.unobserve(entry.target) }
+      }),
+      { threshold: 0.05, rootMargin: '0px 0px -40px 0px' }
+    )
+    document.querySelectorAll('[data-reveal]:not(.is-visible)').forEach((el) => {
+      const rect = el.getBoundingClientRect()
+      if (rect.top < window.innerHeight && rect.bottom > 0) el.classList.add('is-visible')
+      else observer.observe(el)
+    })
+    return () => observer.disconnect()
+  }, [studies])
+
+  const featured   = studies?.[0]
+  const secondary  = studies?.slice(1) ?? []
+  const isLoading  = studies === undefined
+
   return (
     <section className="evidence">
       <div className="evidence__inner">
         <div className="evidence__header" data-reveal="up">
-          <span className="evidence__label">Archive</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <span className="evidence__label">Archive</span>
+            {isAdmin && (
+              <button className="ev-admin-add" onClick={onAddStudy}>
+                <span className="material-symbols-outlined">add</span>
+                Add Study
+              </button>
+            )}
+          </div>
           <h2 className="evidence__title">Selected Evidence</h2>
         </div>
 
-        <div className="evidence__featured" data-reveal="scale" data-delay="80">
-          <img data-parallax="0.06" src={FEATURED_IMG} alt="Strategic planning session" className="evidence__featured-img" />
-          <div className="evidence__featured-body">
-            <div className="evidence__featured-tag" data-reveal="up" data-delay="200">
-              <span className="evidence__tag-line" aria-hidden="true" />
-              Case 01 // Featured
-            </div>
-            <h3 className="evidence__featured-title" data-reveal="up" data-delay="280">
-              Standardizing Research Operations at Scale
-            </h3>
-            <p className="evidence__featured-desc" data-reveal="up" data-delay="360">
-              For a Fortune 50 fintech, we architected a centralized research repository
-              that reduced study lead-time by 40% and improved cross-functional data
-              democratization.
-            </p>
-            <div className="evidence__stats" data-reveal="up" data-delay="440">
-              <div className="evidence__stat">
-                <span className="evidence__stat-num"><CountUp to={60} suffix="%" /></span>
-                <span className="evidence__stat-label">Efficiency Gain</span>
-              </div>
-              <div className="evidence__stat">
-                <span className="evidence__stat-num"><CountUp to={12} suffix="k" /></span>
-                <span className="evidence__stat-label">Data Points Synthesized</span>
-              </div>
-              <a href="#" className="evidence__explore"
-                onClick={(e) => { e.preventDefault(); onNavigate?.('project') }}>
-                Explore Project
-                <span className="material-symbols-outlined">north_east</span>
-              </a>
-            </div>
-          </div>
-        </div>
+        {isLoading && (
+          <div className="ev-loading" data-reveal="fade">Loading studies…</div>
+        )}
 
-        <div className="evidence__secondary">
-          <div className="evidence__card" data-reveal="up" data-delay="80">
-            <div className="evidence__card-top">
-              <span className="evidence__card-label">Case 02 // Enterprise</span>
-              <span className="material-symbols-outlined evidence__card-arrow">arrow_forward</span>
-            </div>
-            <h4 className="evidence__card-title">Optimizing Query Precision</h4>
-            <p className="evidence__card-desc">
-              Re-mapping the cognitive architecture of internal knowledge bases for global consultancy firms.
-            </p>
+        {!isLoading && !featured && (
+          <div className="ev-empty" data-reveal="fade">
+            No case studies yet.{isAdmin ? ' Add one above.' : ''}
           </div>
-          <div className="evidence__card" data-reveal="up" data-delay="200">
-            <div className="evidence__card-top">
-              <span className="evidence__card-label">Case 03 // Finance</span>
-              <span className="material-symbols-outlined evidence__card-arrow">arrow_forward</span>
+        )}
+
+        {featured && (
+          <div className="evidence__featured" data-reveal="scale" data-delay="80">
+            {isAdmin && (
+              <button className="ev-delete" onClick={() => onDeleteStudy(featured.id)} title="Delete study">
+                <span className="material-symbols-outlined">delete</span>
+              </button>
+            )}
+            <img
+              data-parallax="0.06"
+              src={featured.imageUrl}
+              alt={featured.imageCaption || featured.title}
+              className="evidence__featured-img"
+            />
+            <div className="evidence__featured-body">
+              <div className="evidence__featured-tag" data-reveal="up" data-delay="200">
+                <span className="evidence__tag-line" aria-hidden="true" />
+                {featured.eyebrow || `${featured.id} // Featured`}
+              </div>
+              <h3 className="evidence__featured-title" data-reveal="up" data-delay="280">
+                {featured.title}
+              </h3>
+              <p className="evidence__featured-desc" data-reveal="up" data-delay="360">
+                {featured.subtitle}
+              </p>
+              <div className="evidence__stats" data-reveal="up" data-delay="440">
+                {featured.outcomes.slice(0, 2).map((o) => (
+                  <div className="evidence__stat" key={o.label}>
+                    <span className="evidence__stat-num">
+                      <CountUp to={Number(o.value)} suffix={o.suffix} />
+                    </span>
+                    <span className="evidence__stat-label">{o.label}</span>
+                  </div>
+                ))}
+                <a href="#" className="evidence__explore"
+                  onClick={(e) => { e.preventDefault(); onNavigate?.('project', featured.id) }}>
+                  Explore Project
+                  <span className="material-symbols-outlined">north_east</span>
+                </a>
+              </div>
             </div>
-            <h4 className="evidence__card-title">Frictionless Compliance</h4>
-            <p className="evidence__card-desc">
-              Balancing regulatory requirements with user autonomy in cross-border transaction flows.
-            </p>
           </div>
-        </div>
+        )}
+
+        {secondary.length > 0 && (
+          <div className="evidence__secondary">
+            {secondary.map((s, i) => (
+              <div className="evidence__card" key={s.id} data-reveal="up" data-delay={CARD_DELAYS[i]}>
+                {isAdmin && (
+                  <button className="ev-delete ev-delete--card" onClick={() => onDeleteStudy(s.id)} title="Delete study">
+                    <span className="material-symbols-outlined">delete</span>
+                  </button>
+                )}
+                <div className="evidence__card-top">
+                  <span className="evidence__card-label">{s.eyebrow || s.id}</span>
+                  <a href="#" className="evidence__card-arrow-link"
+                    onClick={(e) => { e.preventDefault(); onNavigate?.('project', s.id) }}>
+                    <span className="material-symbols-outlined evidence__card-arrow">arrow_forward</span>
+                  </a>
+                </div>
+                <h4 className="evidence__card-title">{s.title}</h4>
+                <p className="evidence__card-desc">{s.subtitle}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   )
@@ -557,8 +717,29 @@ function Footer() {
 ───────────────────────────────────── */
 
 export default function LandingPage({ onNavigate }) {
+  const [user, setUser]     = useState(null)
+  const [showAdd, setShowAdd] = useState(false)
+  const studies = useAllStudies()
+
+  useEffect(() => onAuthStateChanged(auth, setUser), [])
   useReveal()
   useParallax()
+
+  const isAdmin = user?.email === ADMIN_EMAIL
+  if (user) console.log('[auth] signed in as:', user.email, '| isAdmin:', isAdmin)
+
+  const handleDeleteStudy = async (id) => {
+    if (!window.confirm(`Delete "${id}"? This cannot be undone.`)) return
+    await remove(dbRef(db, `UXP/${id}`))
+  }
+
+  const handleAddStudy = async (studyData) => {
+    const ids = (studies || []).map((s) => parseInt(s.id.split('-')[1]) || 0)
+    const nextNum = Math.max(...ids, 0) + 1
+    const newId = `case-${String(nextNum).padStart(2, '0')}`
+    await set(dbRef(db, `UXP/${newId}`), studyData)
+    setShowAdd(false)
+  }
 
   return (
     <div className="app">
@@ -567,12 +748,25 @@ export default function LandingPage({ onNavigate }) {
       <main className="main">
         <Hero />
         <Capabilities />
-        <SelectedEvidence onNavigate={onNavigate} />
+        <SelectedEvidence
+          onNavigate={onNavigate}
+          studies={studies}
+          isAdmin={isAdmin}
+          onAddStudy={() => setShowAdd(true)}
+          onDeleteStudy={handleDeleteStudy}
+        />
         <MethodicCycle />
         <Team />
         <ContactSection />
       </main>
       <Footer />
+      {showAdd && (
+        <AddStudyModal
+          studies={studies || []}
+          onClose={() => setShowAdd(false)}
+          onSave={handleAddStudy}
+        />
+      )}
     </div>
   )
 }

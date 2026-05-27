@@ -127,7 +127,7 @@ function ScrollProgress() {
 
 const NAV_LINKS = ['ARCHIVE', 'INDEX', 'THEMES', 'LAB']
 
-function Navbar({ onBack, caseId, setCaseId, studies, onEdit }) {
+function Navbar({ onBack, caseId, setCaseId, studies, onEdit, onExport }) {
   const [scrolled, setScrolled] = useState(false)
   const [user, setUser]         = useState(null)
   const [showAuth, setShowAuth] = useState(false)
@@ -149,6 +149,7 @@ function Navbar({ onBack, caseId, setCaseId, studies, onEdit }) {
   }, [showMenu])
 
   const isAdmin = user?.email === 'brandon.johnson0416@gmail.com'
+  if (user) console.log('[auth] signed in as:', user.email, '| isAdmin:', isAdmin)
 
   return (
     <>
@@ -173,10 +174,16 @@ function Navbar({ onBack, caseId, setCaseId, studies, onEdit }) {
           </div>
           <div className="navbar__auth">
             {isAdmin && (
-              <button className="navbar__cta" onClick={onEdit}>
-                <span className="material-symbols-outlined">edit</span>
-                EDIT
-              </button>
+              <>
+                <button className="navbar__cta" onClick={onExport}>
+                  <span className="material-symbols-outlined">download</span>
+                  EXPORT
+                </button>
+                <button className="navbar__cta" onClick={onEdit}>
+                  <span className="material-symbols-outlined">edit</span>
+                  EDIT
+                </button>
+              </>
             )}
             <button className="navbar__cta" onClick={onBack}>BACK TO INDEX</button>
             {user ? (
@@ -608,14 +615,22 @@ function EditModal({ data, caseId, studies, onClose, onSave, onCreateNew }) {
    ProjectDetail
 ───────────────────────────────────── */
 
-export default function ProjectDetail({ onBack }) {
+export default function ProjectDetail({ onBack, caseId: initialCaseId = 'case-01' }) {
   const studies = useCaseStudies()
-  const [caseId, setCaseId] = useState('case-01')
+  const [caseId, setCaseId] = useState(initialCaseId)
   const { data, loading } = useProjectData(caseId)
   const [showEdit, setShowEdit] = useState(false)
 
   useLayoutEffect(() => { window.scrollTo(0, 0) }, [])
   useReveal(!loading)
+
+  const handleExport = () => {
+    const json = JSON.stringify(data, null, 2)
+    const url  = URL.createObjectURL(new Blob([json], { type: 'application/json' }))
+    const a    = Object.assign(document.createElement('a'), { href: url, download: `${caseId}.json` })
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   const handleSaveCase = async (id, formData) => {
     await set(dbRef(db, `UXP/${id}`), formData)
@@ -645,6 +660,7 @@ export default function ProjectDetail({ onBack }) {
         setCaseId={setCaseId}
         studies={studies}
         onEdit={() => setShowEdit(true)}
+        onExport={handleExport}
       />
 
       <main className="main">
