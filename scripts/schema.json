@@ -1,0 +1,56 @@
+{
+  "title": "string",
+  "subtitle": "string",
+  "eyebrow": "string",
+  "imageUrl": "string",
+  "imageCaption": "string",
+  "challengeHeading": "string",
+  "challengeBody": ["string"],
+  "approachHeading": "string",
+  "findingsHeading": "string",
+  "deliverablesHeading": "string",
+  "deliverablesDesc": "string",
+  "outcomesHeading": "string",
+  "meta": [
+    {
+      "icon": "string",
+      "label": "string",
+      "value": "string"
+    }
+  ],
+  "painPoints": [
+    {
+      "icon": "string",
+      "text": "string"
+    }
+  ],
+  "approach": [
+    {
+      "icon": "string",
+      "title": "string",
+      "desc": "string"
+    }
+  ],
+  "findings": [
+    {
+      "icon": "string",
+      "title": "string",
+      "body": "string"
+    }
+  ],
+  "deliverables": [
+    {
+      "icon": "string",
+      "text": "string"
+    }
+  ],
+  "outcomes": [
+    {
+      "icon": "string",
+      "value": "number",
+      "suffix": "string",
+      "label": "string",
+      "sub": "string"
+    }
+  ]
+}
