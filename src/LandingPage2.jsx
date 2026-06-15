@@ -57,10 +57,10 @@ const NAV = [
   { label: 'Capabilities', id: 'n-capabilities' },
   { label: 'Process',      id: 'n-process' },
   { label: 'Work',         id: 'n-work' },
-  { label: 'Pricing',      id: 'n-pricing' },
+  // { label: 'Proof',        id: 'n-proof' },
 ]
 
-function Navbar({ onSwitchDesign }) {
+function Navbar({ onSwitchDesign, theme, onToggleTheme }) {
   const [scrolled, setScrolled] = useState(false)
   const [user, setUser]         = useState(null)
   const [showAuth, setShowAuth] = useState(false)
@@ -95,6 +95,9 @@ function Navbar({ onSwitchDesign }) {
             ))}
           </div>
           <div className="n-nav__right">
+            <button className="n-theme-toggle" onClick={onToggleTheme} aria-label="Toggle light/dark mode">
+              <span className="material-symbols-outlined">{theme === 'light' ? 'dark_mode' : 'light_mode'}</span>
+            </button>
             <button className="n-switch" onClick={onSwitchDesign}>Classic</button>
             {user ? (
               <div className="n-avatar" onClick={(e) => { e.stopPropagation(); setMenuOpen(m => !m) }}>
@@ -138,7 +141,7 @@ function Hero() {
         </h1>
         <p className="n-hero__sub" data-reveal="up" data-delay="160">
           We bridge the gap between what users say and what they mean — through
-          clinical observation, rigorous synthesis, and strategic clarity.
+          clinical observation, rigorous synthesis, and strategy.
         </p>
         <div className="n-hero__actions" data-reveal="up" data-delay="200">
           <button className="n-btn n-btn--primary n-btn--lg" onClick={() => scrollToId('n-contact')}>
@@ -154,62 +157,14 @@ function Hero() {
   )
 }
 
-/* ─── Client Logos ─── */
-const CLIENT_LOGOS = ['Acme', 'Northwind', 'Vertex Labs', 'Quanta', 'Orbital', 'Buildstack']
-
-function ClientLogos() {
-  return (
-    <div className="n-logos" data-reveal="fade">
-      <p className="n-logos__label">Trusted by product teams at</p>
-      <div className="n-logos__row">
-        {CLIENT_LOGOS.map((name) => (
-          <span key={name} className="n-logo">{name}</span>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-/* ─── Benefits Row ─── */
-const BENEFITS = [
-  { stat: '£4,800',  label: 'Flexible pricing',    desc: 'Starting fee for a focused research sprint with clear deliverables.' },
-  { stat: '24 h',    label: 'Fast communication',  desc: 'Guaranteed response within one business day, always.' },
-  { stat: '2–6 wks', label: 'Fast turnarounds',    desc: 'From kickoff to synthesis report — without cutting corners.' },
-]
-
-function BenefitsRow() {
-  return (
-    <div className="n-benefits">
-      {BENEFITS.map((b, i) => (
-        <div key={b.label} className="n-benefit"
-          data-reveal="up" data-delay={i > 0 ? String(i * 80) : undefined}>
-          <span className="n-benefit__stat">{b.stat}</span>
-          <span className="n-benefit__label">{b.label}</span>
-          <p className="n-benefit__desc">{b.desc}</p>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 /* ─── Capabilities ─── */
 const CAPABILITIES = [
-  {
-    group: 'Strategic Research',
-    items: [
-      { icon: 'explore', title: 'Generative Research', desc: 'Uncover unmet needs and map opportunity spaces before you build.' },
-      { icon: 'insights', title: 'Market & Competitive Analysis', desc: 'Benchmark your position and surface whitespace competitors missed.' },
-      { icon: 'hub', title: 'Research Operations', desc: 'Stand up the panels, tools and processes that make research repeatable.' },
-    ],
-  },
-  {
-    group: 'Tactical Research',
-    items: [
-      { icon: 'touch_app', title: 'Usability Testing', desc: 'Validate flows and interfaces with real users before you ship.' },
-      { icon: 'lightbulb', title: 'Concept & Prototype Testing', desc: 'Pressure-test ideas early — before costly development begins.' },
-      { icon: 'calendar_month', title: 'Diary & Longitudinal Studies', desc: 'Track behaviour change over time in real-world contexts.' },
-    ],
-  },
+  { icon: 'explore', title: 'Generative Research', desc: 'Uncover unmet needs and map opportunity spaces before you build.' },
+  { icon: 'insights', title: 'Market & Competitive Analysis', desc: 'Benchmark your position and surface whitespace competitors missed.' },
+  { icon: 'hub', title: 'Research Operations', desc: 'Stand up the panels, tools and processes that make research repeatable.' },
+  { icon: 'touch_app', title: 'Usability Testing', desc: 'Validate flows and interfaces with real users before you ship.' },
+  { icon: 'lightbulb', title: 'Concept & Prototype Testing', desc: 'Pressure-test ideas early — before costly development begins.' },
+  { icon: 'calendar_month', title: 'Diary & Longitudinal Studies', desc: 'Track behaviour change over time in real-world contexts.' },
 ]
 
 function Capabilities() {
@@ -220,24 +175,15 @@ function Capabilities() {
           <p className="n-eyebrow">Capabilities</p>
           <h2 className="n-section-title">Research, end to end.</h2>
         </div>
-        {CAPABILITIES.map((group, gi) => (
-          <div key={group.group} className="n-cap__group"
-            data-reveal="up" data-delay={gi > 0 ? '80' : undefined}>
-            <h4 className="n-cap__group-label">{group.group}</h4>
-            <div className="n-cap__grid">
-              {group.items.map((c) => (
-                <div key={c.title} className="n-cap-card">
-                  <span className="material-symbols-outlined n-cap-card__icon">{c.icon}</span>
-                  <h3 className="n-cap-card__title">{c.title}</h3>
-                  <p className="n-cap-card__desc">{c.desc}</p>
-                  <a href="#" className="n-text-link" onClick={(e) => e.preventDefault()}>
-                    Learn more <span>→</span>
-                  </a>
-                </div>
-              ))}
+        <div className="n-cap__grid" data-reveal="up" data-delay="80">
+          {CAPABILITIES.map((c) => (
+            <div key={c.title} className="n-cap-card">
+              <span className="material-symbols-outlined n-cap-card__icon">{c.icon}</span>
+              <h3 className="n-cap-card__title">{c.title}</h3>
+              <p className="n-cap-card__desc">{c.desc}</p>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   )
@@ -389,7 +335,7 @@ function Testimonials() {
             </div>
           </div>
         </div>
-        <div className="n-metrics" data-reveal="up" data-delay="120">
+        {/* <div className="n-metrics" data-reveal="up" data-delay="120">
           {[
             { val: '50+',  lbl: 'Engagements completed' },
             { val: '3×',   lbl: 'Faster than in-house' },
@@ -400,68 +346,7 @@ function Testimonials() {
               <span className="n-metric__lbl">{m.lbl}</span>
             </div>
           ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
-/* ─── Pricing ─── */
-const PLANS = [
-  {
-    name: 'Sprint',
-    price: '£4,800',
-    period: 'one-time',
-    desc: 'Focused insight for a specific product question.',
-    features: ['2-week delivery', '5 user interviews', 'Synthesis report', 'Strategic presentation'],
-  },
-  {
-    name: 'Engagement',
-    price: '£14,500',
-    period: 'per quarter',
-    desc: 'A fully embedded research function for your team.',
-    features: ['20+ interviews / quarter', 'Weekly synthesis updates', 'Dedicated research lead', 'Custom method design', 'Priority scheduling'],
-    featured: true,
-  },
-  {
-    name: 'Enterprise',
-    price: 'Custom',
-    period: 'tailored',
-    desc: "Got ambitious goals? Let's discuss an embedded practice.",
-    features: ['Embedded research team', 'Custom methodology', 'Process integration', 'Executive reporting', 'Team enablement'],
-  },
-]
-
-function Pricing() {
-  return (
-    <section className="n-pricing" id="n-pricing">
-      <div className="n-inner">
-        <div className="n-pricing__header" data-reveal="up">
-          <p className="n-eyebrow">Pricing</p>
-          <h2 className="n-section-title">Research that pays for itself.</h2>
-          <p className="n-pricing__sub">Transparent pricing. No hidden fees. Clear deliverables.</p>
-        </div>
-        <div className="n-pricing__grid" data-reveal="up" data-delay="80">
-          {PLANS.map((p) => (
-            <div key={p.name} className={`n-plan${p.featured ? ' n-plan--feat' : ''}`}>
-              <div className="n-plan__head">
-                <h3 className="n-plan__name">{p.name}</h3>
-                <div className="n-plan__price">
-                  {p.price}<span className="n-plan__period"> / {p.period}</span>
-                </div>
-                <p className="n-plan__desc">{p.desc}</p>
-              </div>
-              <ul className="n-plan__list">
-                {p.features.map((f) => (
-                  <li key={f}><span className="n-check">✓</span>{f}</li>
-                ))}
-              </ul>
-              <button className={`n-btn n-btn--full ${p.featured ? 'n-btn--primary' : 'n-btn--outline'}`}>
-                {p.price === 'Custom' ? 'Book a meeting' : 'Get started'}
-              </button>
-            </div>
-          ))}
-        </div>
+        </div> */}
       </div>
     </section>
   )
@@ -587,19 +472,21 @@ function Footer() {
 export default function LandingPage2({ onNavigate, onSwitchDesign }) {
   const studies = useAllStudies()
   useReveal()
+  const [theme, setTheme] = useState(() => localStorage.getItem('n-theme') || 'dark')
+
+  useEffect(() => { localStorage.setItem('n-theme', theme) }, [theme])
+
+  const toggleTheme = () => setTheme((t) => (t === 'light' ? 'dark' : 'light'))
 
   return (
-    <div className="n">
-      <Navbar onSwitchDesign={onSwitchDesign} />
+    <div className={`n${theme === 'light' ? ' n--light' : ''}`}>
+      <Navbar onSwitchDesign={onSwitchDesign} theme={theme} onToggleTheme={toggleTheme} />
       <main>
         <Hero />
-        <ClientLogos />
-        <BenefitsRow />
         <Capabilities />
         <Process />
         <Testimonials />
         <FeaturedWork studies={studies} onNavigate={onNavigate} />
-        <Pricing />
         <FAQ />
         <ContactCTA />
       </main>
