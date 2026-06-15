@@ -160,9 +160,14 @@ function CountUp({ to, suffix = '', duration = 1600 }) {
    Navbar
 ───────────────────────────────────── */
 
-const NAV_LINKS = ['ARCHIVE', 'INDEX', 'THEMES', 'LAB']
+const NAV_LINKS = [
+  { label: 'ARCHIVE', section: 'evidence' },
+  { label: 'PROCESS', section: 'cycle' },
+  { label: 'PHILOSOPHY', section: 'quote' },
+  { label: 'ENGAGE', section: 'contact' },
+]
 
-function Navbar() {
+function Navbar({ onSwitchDesign }) {
   const [scrolled, setScrolled] = useState(false)
   const [user, setUser]         = useState(null)
   const [showAuth, setShowAuth] = useState(false)
@@ -183,6 +188,12 @@ function Navbar() {
     return () => window.removeEventListener('click', close)
   }, [showMenu])
 
+  const handleNavClick = (e, section) => {
+    e.preventDefault()
+    const el = document.querySelector(`.${section}`)
+    if (el) el.scrollIntoView({ behavior: 'smooth' })
+  }
+
   return (
     <>
       <nav className={`navbar${scrolled ? ' navbar--scrolled' : ''}`}>
@@ -194,11 +205,11 @@ function Navbar() {
           </div>
           <div className="navbar__links">
             {NAV_LINKS.map((l) => (
-              <a key={l} href="#" className={l === 'INDEX' ? 'active' : ''}>{l}</a>
+              <a key={l.label} href="#" onClick={(e) => handleNavClick(e, l.section)}>{l.label}</a>
             ))}
           </div>
           <div className="navbar__auth">
-            <button className="navbar__cta">READ JOURNAL</button>
+            <button className="navbar__cta" onClick={onSwitchDesign}>New Design</button>
             {user ? (
               <div className="navbar__user"
                 onClick={(e) => { e.stopPropagation(); setShowMenu((m) => !m) }}>
@@ -254,8 +265,7 @@ function Hero() {
           </div>
         </div>
         <div className="hero__right" data-reveal="fade" data-delay="160">
-          <img src={HERO_IMAGE} alt="Atmospheric research space" className="hero__img" />
-          <div className="hero__img-overlay" aria-hidden="true" />
+          <img src={HERO_IMAGE} alt="Abstract research visualization" className="hero__img" />
         </div>
       </div>
     </section>
@@ -297,7 +307,10 @@ function Capabilities() {
       <div className="capabilities__inner">
         <div className="capabilities__header" data-reveal="up">
           <div className="capabilities__header-left">
-            <span className="label-sm">Methodology</span>
+            <span className="label-sm">
+              <span className="material-symbols-outlined">category</span>
+              Methodology
+            </span>
             <h2 className="capabilities__title">Capabilities</h2>
           </div>
           <span className="capabilities__count">Methods // Suite 01.04</span>
@@ -451,7 +464,10 @@ function SelectedEvidence({ onNavigate, studies, isAdmin, onAddStudy, onDeleteSt
       <div className="evidence__inner">
         <div className="evidence__header" data-reveal="up">
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <span className="evidence__label">Archive</span>
+            <span className="evidence__label">
+              <span className="material-symbols-outlined">folder_open</span>
+              Archive
+            </span>
             {isAdmin && (
               <button className="ev-admin-add" onClick={onAddStudy}>
                 <span className="material-symbols-outlined">add</span>
@@ -547,11 +563,11 @@ function SelectedEvidence({ onNavigate, studies, isAdmin, onAddStudy, onDeleteSt
 ───────────────────────────────────── */
 
 const STEPS = [
-  { num: '01', title: 'Discovery', desc: 'Audit of existing intelligence and deep stakeholder alignment sessions.', active: true },
-  { num: '02', title: 'Framing', desc: 'Constructing the research hypothesis and bespoke methodology design.', active: false },
-  { num: '03', title: 'Field Work', desc: 'Active ethnography, expert interviews, and clinical data acquisition.', active: false },
-  { num: '04', title: 'Synthesis', desc: 'Pattern identification, behavioral mapping, and thematic extraction.', active: false },
-  { num: '05', title: 'Strategy', desc: 'Implementation roadmaps, design principles, and strategic briefings.', active: false },
+  { num: '01', icon: 'search', title: 'Discovery', desc: 'Audit of existing intelligence and deep stakeholder alignment sessions.', active: true },
+  { num: '02', icon: 'edit_note', title: 'Framing', desc: 'Constructing the research hypothesis and bespoke methodology design.', active: false },
+  { num: '03', icon: 'groups', title: 'Field Work', desc: 'Active ethnography, expert interviews, and clinical data acquisition.', active: false },
+  { num: '04', icon: 'hub', title: 'Synthesis', desc: 'Pattern identification, behavioral mapping, and thematic extraction.', active: false },
+  { num: '05', icon: 'flag', title: 'Strategy', desc: 'Implementation roadmaps, design principles, and strategic briefings.', active: false },
 ]
 
 const STEP_DELAYS = [undefined, '80', '160', '280', '360']
@@ -561,6 +577,10 @@ function MethodicCycle() {
     <section className="cycle">
       <div className="cycle__inner">
         <div className="cycle__header" data-reveal="up">
+          <span className="label-sm">
+            <span className="material-symbols-outlined">autorenew</span>
+            Process
+          </span>
           <h2 className="cycle__title">The Methodic Cycle</h2>
           <p className="cycle__subtitle">A linear approach to complex synthesis</p>
         </div>
@@ -568,8 +588,11 @@ function MethodicCycle() {
           <div className="cycle__progress-line" aria-hidden="true" />
           {STEPS.map((step, i) => (
             <div className="cycle__step" key={step.num} data-reveal="up" data-delay={STEP_DELAYS[i]}>
-              <div className={`cycle__dot${step.active ? ' cycle__dot--active' : ''}`}>{step.num}</div>
+              <div className={`cycle__dot${step.active ? ' cycle__dot--active' : ''}`}>
+                <span className="material-symbols-outlined">{step.icon}</span>
+              </div>
               <div className="cycle__step-body">
+                <span className="cycle__step-num">{step.num}</span>
                 <h5 className="cycle__step-title">{step.title}</h5>
                 <p className="cycle__step-desc">{step.desc}</p>
               </div>
@@ -585,54 +608,20 @@ function MethodicCycle() {
    Team
 ───────────────────────────────────── */
 
-const MEMBERS = [
-  {
-    name: 'Elias Vance',
-    role: 'Lead Strategist',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAT2X4IMDV_9NtplWNCkXjWhe-FXkXSNb_6V3SDyAsrCozItQ35DMRSgfGygiSky9qmoJn8A0aMYu5ehA9W6i2_qqYr6IbeKvvnqsjfl5cWXBqYf9E8OCcJ579en_hcaNzoG7CPkItmuPFMbQr2DAB1H6sy65NHe8eDcTUTjbJfWwKGPqfuKmvAR2HKeOGActBzjYEXk4Z6xurtZ856DjeMLazQdYaaPU4FnOd3reAmi6zQlRebsOXKrRNIcxDXLQ582kinGmQwwHGe',
-  },
-  {
-    name: 'Sarah Jenkins',
-    role: 'Director of Methods',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDEi6p1_rB3DeXoZ3x9amQztTN7fWqB4h1r4ojwveh7-FhXjIf4iABD4JwnmmxANfIm1b884MwJeScUU3fmkMXwnqMYgG-76KtR-J091HmfUj7zs9dSuKHg0q9yFkvME7JAcMmMEm14Stn_VCiqk7_HQOYNo1KScbsqeowFnQ4Bn6AEgI9Q8wutJmEFHQbWTkJjZpyWM8DLqe5Vz8Qfkt6UZaBgqupEOvC9_3MayLobge8oPwVUGZH3NKQFvD0q_6e_c37WbpDBNUVn',
-  },
-  {
-    name: 'Marcus Thorne',
-    role: 'Senior Anthropologist',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDjOGtWAIeXPRRUSKSYJK26lRe6ZW5mTecWweoS_XTELujzYjK6zvQfihaxeASTaGXRysMdVbKYCZaV5ohYxGh7ns878BTd0XkTqRDvxuFWzes5EcfFutWcvpApGcbAfYOVskOYc7IdHXAdZ7jJyftwmAkKuMbq-r91KHupS4fOWN_EFfjujGyTHTTVfNVryQxHBoOVacmrMV4238eEV1askeSRkyJ4g0h8RFGPCISnyaJWOOmrBDfU5x26f1ZBoBxOVdyiioZoU6TE',
-  },
-]
-
-const MEMBER_DELAYS = ['80', '200', '360']
-
-function Team() {
+function Quote() {
   return (
-    <section className="team">
-      <div className="team__inner">
-        <div className="team__quote-wrap" data-reveal="fade">
-          <blockquote className="team__quote">
-            "We believe the most valuable data points occur in the silence between actions."
-          </blockquote>
-          <div className="team__quote-line" aria-hidden="true" />
-          <p className="team__quote-body">
-            Methodic is a boutique research collective founded on the principle of
-            methodological rigor. We don't just find answers; we find the right questions
-            for the world's most ambitious design teams.
-          </p>
-        </div>
-        <div className="team__grid">
-          {MEMBERS.map((m, i) => (
-            <div className="team-card" key={m.name} data-reveal="up" data-delay={MEMBER_DELAYS[i]}>
-              <div className="team-card__portrait">
-                <img data-parallax="0.05" src={m.img} alt={m.name} className="team-card__img" />
-              </div>
-              <div className="team-card__info">
-                <h6 className="team-card__name">{m.name}</h6>
-                <span className="team-card__role">{m.role}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+    <section className="quote">
+      <div className="quote__inner">
+        <span className="material-symbols-outlined quote__icon" data-reveal="fade">format_quote</span>
+        <blockquote className="quote__text" data-reveal="fade" data-delay="80">
+          We believe the most valuable data points occur in the silence between actions.
+        </blockquote>
+        <div className="quote__line" aria-hidden="true" data-reveal="fade" data-delay="160" />
+        <p className="quote__body" data-reveal="fade" data-delay="200">
+          Methodic is a boutique research collective founded on the principle of
+          methodological rigor. We don't just find answers; we find the right questions
+          for the world's most ambitious design teams.
+        </p>
       </div>
     </section>
   )
@@ -654,6 +643,10 @@ function ContactSection() {
     <section className="contact">
       <div className="contact__inner">
         <div className="contact__header" data-reveal="up">
+          <span className="label-sm">
+            <span className="material-symbols-outlined">forum</span>
+            Engagement
+          </span>
           <h2 className="contact__title">Initiate a Consultation</h2>
           <p className="contact__desc">
             Tell us about your research challenges. We typically respond within 24 hours
@@ -716,7 +709,7 @@ function Footer() {
    LandingPage
 ───────────────────────────────────── */
 
-export default function LandingPage({ onNavigate }) {
+export default function LandingPage({ onNavigate, onSwitchDesign }) {
   const [user, setUser]     = useState(null)
   const [showAdd, setShowAdd] = useState(false)
   const studies = useAllStudies()
@@ -744,7 +737,7 @@ export default function LandingPage({ onNavigate }) {
   return (
     <div className="app">
       <ScrollProgress />
-      <Navbar />
+      <Navbar onSwitchDesign={onSwitchDesign} />
       <main className="main">
         <Hero />
         <Capabilities />
@@ -756,7 +749,7 @@ export default function LandingPage({ onNavigate }) {
           onDeleteStudy={handleDeleteStudy}
         />
         <MethodicCycle />
-        <Team />
+        <Quote />
         <ContactSection />
       </main>
       <Footer />

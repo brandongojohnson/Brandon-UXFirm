@@ -242,7 +242,8 @@
   flex-wrap: wrap;
   gap: 1px;
   background: var(--hairline-20);
-  border: 1px solid var(--hairline-20);
+  border-left: 1.5px solid var(--hairline-20);
+  border-right: 1.5px solid var(--hairline-20);
 }
 
 .ps__card {
