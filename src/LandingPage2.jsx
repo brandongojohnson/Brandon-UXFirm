@@ -60,11 +60,8 @@ const NAV = [
   // { label: 'Proof',        id: 'n-proof' },
 ]
 
-function Navbar({ onSwitchDesign, theme, onToggleTheme }) {
+function Navbar({ theme, onToggleTheme }) {
   const [scrolled, setScrolled] = useState(false)
-  const [user, setUser]         = useState(null)
-  const [showAuth, setShowAuth] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 60)
@@ -72,58 +69,28 @@ function Navbar({ onSwitchDesign, theme, onToggleTheme }) {
     return () => window.removeEventListener('scroll', fn)
   }, [])
 
-  useEffect(() => onAuthStateChanged(auth, setUser), [])
-
-  useEffect(() => {
-    if (!menuOpen) return
-    const close = () => setMenuOpen(false)
-    window.addEventListener('click', close)
-    return () => window.removeEventListener('click', close)
-  }, [menuOpen])
-
   return (
-    <>
-      <nav className={`n-nav${scrolled ? ' n-nav--scrolled' : ''}`}>
-        <div className="n-nav__inner">
-          <a className="n-nav__logo" href="#">Methodic<sup className="n-sup">®</sup></a>
-          <div className="n-nav__links">
-            {NAV.map((l) => (
-              <a key={l.label} href="#"
-                onClick={(e) => { e.preventDefault(); scrollToId(l.id) }}>
-                {l.label}
-              </a>
-            ))}
-          </div>
-          <div className="n-nav__right">
-            <button className="n-theme-toggle" onClick={onToggleTheme} aria-label="Toggle light/dark mode">
-              <span className="material-symbols-outlined">{theme === 'light' ? 'dark_mode' : 'light_mode'}</span>
-            </button>
-            <button className="n-switch" onClick={onSwitchDesign}>Classic</button>
-            {user ? (
-              <div className="n-avatar" onClick={(e) => { e.stopPropagation(); setMenuOpen(m => !m) }}>
-                {user.photoURL
-                  ? <img src={user.photoURL} alt="" />
-                  : (user.displayName || user.email || 'U')[0].toUpperCase()}
-                {menuOpen && (
-                  <div className="n-avatar__menu">
-                    <span className="n-avatar__email">{user.email}</span>
-                    <button onClick={() => signOut(auth)}>Sign Out</button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <button className="n-btn n-btn--ghost n-btn--sm" onClick={() => setShowAuth(true)}>
-                Sign In
-              </button>
-            )}
-            <button className="n-btn n-btn--primary n-btn--sm" onClick={() => scrollToId('n-contact')}>
-              Book a call
-            </button>
-          </div>
+    <nav className={`n-nav${scrolled ? ' n-nav--scrolled' : ''}`}>
+      <div className="n-nav__inner">
+        <a className="n-nav__logo" href="#">Methodic<sup className="n-sup">®</sup></a>
+        <div className="n-nav__links">
+          {NAV.map((l) => (
+            <a key={l.label} href="#"
+              onClick={(e) => { e.preventDefault(); scrollToId(l.id) }}>
+              {l.label}
+            </a>
+          ))}
         </div>
-      </nav>
-      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
-    </>
+        <div className="n-nav__right">
+          <button className="n-theme-toggle" onClick={onToggleTheme} aria-label="Toggle light/dark mode">
+            <span className="material-symbols-outlined">{theme === 'light' ? 'dark_mode' : 'light_mode'}</span>
+          </button>
+          <button className="n-btn n-btn--primary n-btn--sm" onClick={() => scrollToId('n-contact')}>
+            Book a call
+          </button>
+        </div>
+      </div>
+    </nav>
   )
 }
 
@@ -132,10 +99,6 @@ function Hero() {
   return (
     <section className="n-hero">
       <div className="n-hero__inner">
-        <div className="n-hero__tag" data-reveal="fade">
-          <span>Research starting from</span>
-          <strong>£4,800</strong>
-        </div>
         <h1 className="n-hero__h1" data-reveal="up" data-delay="80">
           Not just another<br />research firm.
         </h1>
@@ -153,6 +116,32 @@ function Hero() {
         </div>
       </div>
       <div className="n-hero__stem" aria-hidden="true" />
+    </section>
+  )
+}
+
+/* ─── About ─── */
+function About() {
+  return (
+    <section className="n-about" id="n-about">
+      <div className="n-inner n-about__inner">
+        <div className="n-about__header" data-reveal="up">
+          <p className="n-eyebrow">About the firm</p>
+          <h2 className="n-section-title">Research-led, founder-run.</h2>
+        </div>
+        <div className="n-about__body" data-reveal="up" data-delay="80">
+          <p>
+            Methodic is an independent research practice founded by former in-house researchers
+            who grew tired of insight arriving too late to matter. We work directly with product
+            and leadership teams — no account managers, no junior hand-offs — turning ambiguity
+            into evidence you can act on.
+          </p>
+          <p>
+            Every engagement is led end-to-end by a senior researcher, drawing on a decade of
+            experience across consumer, fintech and B2B platforms.
+          </p>
+        </div>
+      </div>
     </section>
   )
 }
@@ -446,7 +435,20 @@ const FOOTER_COLS = [
   { head: 'Legal',    links: ['Privacy Policy', 'Terms of Service'] },
 ]
 
-function Footer() {
+function Footer({ onSwitchDesign }) {
+  const [user, setUser]         = useState(null)
+  const [showAuth, setShowAuth] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  useEffect(() => onAuthStateChanged(auth, setUser), [])
+
+  useEffect(() => {
+    if (!menuOpen) return
+    const close = () => setMenuOpen(false)
+    window.addEventListener('click', close)
+    return () => window.removeEventListener('click', close)
+  }, [menuOpen])
+
   return (
     <footer className="n-footer">
       <div className="n-inner n-footer__inner">
@@ -464,6 +466,27 @@ function Footer() {
           ))}
         </div>
       </div>
+      <div className="n-inner n-footer__bottom">
+        <button className="n-switch" onClick={onSwitchDesign}>Classic</button>
+        {user ? (
+          <div className="n-avatar" onClick={(e) => { e.stopPropagation(); setMenuOpen(m => !m) }}>
+            {user.photoURL
+              ? <img src={user.photoURL} alt="" />
+              : (user.displayName || user.email || 'U')[0].toUpperCase()}
+            {menuOpen && (
+              <div className="n-avatar__menu">
+                <span className="n-avatar__email">{user.email}</span>
+                <button onClick={() => signOut(auth)}>Sign Out</button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button className="n-btn n-btn--ghost n-btn--sm" onClick={() => setShowAuth(true)}>
+            Sign In
+          </button>
+        )}
+      </div>
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
     </footer>
   )
 }
@@ -480,9 +503,10 @@ export default function LandingPage2({ onNavigate, onSwitchDesign }) {
 
   return (
     <div className={`n${theme === 'light' ? ' n--light' : ''}`}>
-      <Navbar onSwitchDesign={onSwitchDesign} theme={theme} onToggleTheme={toggleTheme} />
+      <Navbar theme={theme} onToggleTheme={toggleTheme} />
       <main>
         <Hero />
+        {/* <About /> */}
         <Capabilities />
         <Process />
         <Testimonials />
@@ -490,7 +514,7 @@ export default function LandingPage2({ onNavigate, onSwitchDesign }) {
         <FAQ />
         <ContactCTA />
       </main>
-      <Footer />
+      <Footer onSwitchDesign={onSwitchDesign} />
     </div>
   )
 }
