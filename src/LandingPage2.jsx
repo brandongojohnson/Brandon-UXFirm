@@ -199,8 +199,8 @@ function Process() {
           {PROCESS_STEPS.map((s) => (
             <div key={s.num} className="n-step">
               <div className="n-step__head">
-                <span className="n-step__num">{s.num}</span>
                 <span className="material-symbols-outlined n-step__icon">{s.icon}</span>
+                <span className="n-step__num">{s.num}</span>
               </div>
               <h3 className="n-step__title">{s.title}</h3>
               <p className="n-step__desc">{s.desc}</p>
@@ -435,7 +435,7 @@ const FOOTER_COLS = [
   { head: 'Legal',    links: ['Privacy Policy', 'Terms of Service'] },
 ]
 
-function Footer({ onSwitchDesign }) {
+function Footer() {
   const [user, setUser]         = useState(null)
   const [showAuth, setShowAuth] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -467,7 +467,6 @@ function Footer({ onSwitchDesign }) {
         </div>
       </div>
       <div className="n-inner n-footer__bottom">
-        <button className="n-switch" onClick={onSwitchDesign}>Classic</button>
         {user ? (
           <div className="n-avatar" onClick={(e) => { e.stopPropagation(); setMenuOpen(m => !m) }}>
             {user.photoURL
@@ -492,18 +491,13 @@ function Footer({ onSwitchDesign }) {
 }
 
 /* ─── Page ─── */
-export default function LandingPage2({ onNavigate, onSwitchDesign }) {
+export default function LandingPage2({ onNavigate, theme, onToggleTheme }) {
   const studies = useAllStudies()
   useReveal()
-  const [theme, setTheme] = useState(() => localStorage.getItem('n-theme') || 'dark')
-
-  useEffect(() => { localStorage.setItem('n-theme', theme) }, [theme])
-
-  const toggleTheme = () => setTheme((t) => (t === 'light' ? 'dark' : 'light'))
 
   return (
     <div className={`n${theme === 'light' ? ' n--light' : ''}`}>
-      <Navbar theme={theme} onToggleTheme={toggleTheme} />
+      <Navbar theme={theme} onToggleTheme={onToggleTheme} />
       <main>
         <Hero />
         {/* <About /> */}
@@ -514,7 +508,7 @@ export default function LandingPage2({ onNavigate, onSwitchDesign }) {
         <FAQ />
         <ContactCTA />
       </main>
-      <Footer onSwitchDesign={onSwitchDesign} />
+      <Footer />
     </div>
   )
 }

@@ -1,11 +1,15 @@
-import { useState } from 'react'
-import LandingPage from './LandingPage'
+import { useState, useEffect } from 'react'
 import LandingPage2 from './LandingPage2'
 import ProjectDetail from './ProjectDetail'
 
 export default function App() {
   const [page, setPage]           = useState('home')
   const [activeCaseId, setActiveCaseId] = useState('case-01')
+  const [theme, setTheme]         = useState(() => localStorage.getItem('n-theme') || 'light')
+
+  useEffect(() => { localStorage.setItem('n-theme', theme) }, [theme])
+
+  const toggleTheme = () => setTheme((t) => (t === 'light' ? 'dark' : 'light'))
 
   const navigate = (p, caseId) => {
     if (caseId) setActiveCaseId(caseId)
@@ -14,10 +18,14 @@ export default function App() {
   }
 
   if (page === 'project') {
-    return <ProjectDetail caseId={activeCaseId} onBack={() => navigate('home')} />
+    return (
+      <ProjectDetail
+        caseId={activeCaseId}
+        onBack={() => navigate('home')}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      />
+    )
   }
-  if (page === 'alt') {
-    return <LandingPage2 onNavigate={navigate} onSwitchDesign={() => navigate('home')} />
-  }
-  return <LandingPage onNavigate={navigate} onSwitchDesign={() => navigate('alt')} />
+  return <LandingPage2 onNavigate={navigate} theme={theme} onToggleTheme={toggleTheme} />
 }

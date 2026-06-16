@@ -5,6 +5,7 @@ import { auth, db } from './firebase'
 import AuthModal from './AuthModal'
 import './index.css'
 import './ProjectDetail.css'
+import './landing2.css'
 
 /* ─────────────────────────────────────
    Hooks
@@ -125,94 +126,64 @@ function ScrollProgress() {
    Navbar
 ───────────────────────────────────── */
 
-const NAV_LINKS = ['ARCHIVE', 'INDEX', 'THEMES', 'LAB']
+const PD_NAV = [
+  { label: 'Capabilities', id: 'n-capabilities' },
+  { label: 'Process',      id: 'n-process' },
+  { label: 'Work',         id: 'n-work' },
+]
 
-function Navbar({ onBack, caseId, setCaseId, studies, onEdit, onExport }) {
+function Navbar({ onBack, caseId, setCaseId, studies, onEdit, onExport, isAdmin, theme, onToggleTheme }) {
   const [scrolled, setScrolled] = useState(false)
-  const [user, setUser]         = useState(null)
-  const [showAuth, setShowAuth] = useState(false)
-  const [showMenu, setShowMenu] = useState(false)
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 100)
+    const onScroll = () => setScrolled(window.scrollY > 60)
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  useEffect(() => onAuthStateChanged(auth, setUser), [])
-
-  useEffect(() => {
-    if (!showMenu) return
-    const close = () => setShowMenu(false)
-    window.addEventListener('click', close)
-    return () => window.removeEventListener('click', close)
-  }, [showMenu])
-
-  const isAdmin = user?.email === 'brandon.johnson0416@gmail.com'
-  if (user) console.log('[auth] signed in as:', user.email, '| isAdmin:', isAdmin)
-
   return (
-    <>
-      <nav className={`navbar${scrolled ? ' navbar--scrolled' : ''}`}>
-        <div className="navbar__inner">
-          <div className="navbar__left">
-            <a className="navbar__logo" href="#"
-              onClick={(e) => { e.preventDefault(); onBack() }}>Methodic</a>
-            <span className="navbar__sep" aria-hidden="true" />
-            {studies && studies.length > 0 && (
-              <select className="navbar__case-select" value={caseId} onChange={(e) => setCaseId(e.target.value)}>
-                {studies.map((id) => (
-                  <option key={id} value={id}>{id}</option>
-                ))}
-              </select>
-            )}
-          </div>
-          <div className="navbar__links">
-            {NAV_LINKS.map((l) => (
-              <a key={l} href="#" className={l === 'ARCHIVE' ? 'active' : ''}>{l}</a>
-            ))}
-          </div>
-          <div className="navbar__auth">
-            {isAdmin && (
-              <>
-                <button className="navbar__cta" onClick={onExport}>
-                  <span className="material-symbols-outlined">download</span>
-                  EXPORT
-                </button>
-                <button className="navbar__cta" onClick={onEdit}>
-                  <span className="material-symbols-outlined">edit</span>
-                  EDIT
-                </button>
-              </>
-            )}
-            <button className="navbar__cta" onClick={onBack}>BACK TO INDEX</button>
-            {user ? (
-              <div className="navbar__user"
-                onClick={(e) => { e.stopPropagation(); setShowMenu((m) => !m) }}>
-                <div className="navbar__avatar">
-                  {user.photoURL
-                    ? <img src={user.photoURL} alt="" />
-                    : (user.displayName || user.email || 'U')[0].toUpperCase()}
-                </div>
-                {showMenu && (
-                  <div className="navbar__user-menu">
-                    <span className="navbar__user-email">{user.email}</span>
-                    <button className="navbar__signout" onClick={() => signOut(auth)}>
-                      Sign Out
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <button className="navbar__signin" onClick={() => setShowAuth(true)}>
-                Sign In
-              </button>
-            )}
-          </div>
+    <nav className={`n-nav${scrolled ? ' n-nav--scrolled' : ''}`}>
+      <div className="n-nav__inner">
+        <a className="n-nav__logo" href="#"
+          onClick={(e) => { e.preventDefault(); onBack() }}>
+          Methodic<sup className="n-sup">®</sup>
+        </a>
+        <div className="n-nav__links">
+          {PD_NAV.map((l) => (
+            <a key={l.label} href="#"
+              onClick={(e) => { e.preventDefault(); onBack() }}>
+              {l.label}
+            </a>
+          ))}
         </div>
-      </nav>
-      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
-    </>
+        <div className="n-nav__right">
+          {studies?.length > 0 && (
+            <select className="pd-nav__select" value={caseId}
+              onChange={(e) => setCaseId(e.target.value)}>
+              {studies.map((id) => (
+                <option key={id} value={id}>{id}</option>
+              ))}
+            </select>
+          )}
+          {isAdmin && (
+            <>
+              <button className="n-btn n-btn--sm n-btn--ghost pd-nav__btn" onClick={onExport}>
+                <span className="material-symbols-outlined">download</span>Export
+              </button>
+              <button className="n-btn n-btn--sm n-btn--ghost pd-nav__btn" onClick={onEdit}>
+                <span className="material-symbols-outlined">edit</span>Edit
+              </button>
+            </>
+          )}
+          <button className="n-theme-toggle" onClick={onToggleTheme} aria-label="Toggle theme">
+            <span className="material-symbols-outlined">{theme === 'light' ? 'dark_mode' : 'light_mode'}</span>
+          </button>
+          <button className="n-btn n-btn--primary n-btn--sm" onClick={onBack}>
+            Book a call
+          </button>
+        </div>
+      </div>
+    </nav>
   )
 }
 
@@ -256,19 +227,46 @@ function CountUp({ to, suffix = '', duration = 1600 }) {
 
 const FOOTER_LINKS = ['PRIVACY', 'TERMS', 'CONTACT', 'INSTAGRAM']
 
-function Footer() {
+function Footer({ user, onShowAuth }) {
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  useEffect(() => {
+    if (!menuOpen) return
+    const close = () => setMenuOpen(false)
+    window.addEventListener('click', close)
+    return () => window.removeEventListener('click', close)
+  }, [menuOpen])
+
   return (
-    <footer className="footer">
-      <div className="footer__inner">
-        <div className="footer__brand" data-reveal="fade">
-          <span className="footer__logo">Methodic</span>
-          <p className="footer__copy">© 2024 Methodic. London / New York / Berlin.</p>
-        </div>
-        <nav className="footer__links" data-reveal="fade" data-delay="120">
+    <footer className="pd-footer">
+      <div className="n-inner pd-footer__inner">
+        <span className="pd-footer__logo">Methodic<sup className="n-sup">®</sup></span>
+        <nav className="pd-footer__links">
           {FOOTER_LINKS.map((l) => (
-            <a key={l} href="#" className="footer__link">{l}</a>
+            <a key={l} href="#" className="pd-footer__link">{l}</a>
           ))}
         </nav>
+        <div className="pd-footer__auth">
+          <p className="pd-footer__copy">© 2025 Methodic Research Ltd. London / New York.</p>
+          {user ? (
+            <div className="n-avatar"
+              onClick={(e) => { e.stopPropagation(); setMenuOpen((m) => !m) }}>
+              {user.photoURL
+                ? <img src={user.photoURL} alt="" />
+                : (user.displayName || user.email || 'U')[0].toUpperCase()}
+              {menuOpen && (
+                <div className="n-avatar__menu pd-footer__avatar-menu">
+                  <span className="n-avatar__email">{user.email}</span>
+                  <button onClick={() => signOut(auth)}>Sign Out</button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button className="n-btn n-btn--sm n-btn--ghost" onClick={onShowAuth}>
+              Sign In
+            </button>
+          )}
+        </div>
       </div>
     </footer>
   )
@@ -615,14 +613,19 @@ function EditModal({ data, caseId, studies, onClose, onSave, onCreateNew }) {
    ProjectDetail
 ───────────────────────────────────── */
 
-export default function ProjectDetail({ onBack, caseId: initialCaseId = 'case-01' }) {
+export default function ProjectDetail({ onBack, caseId: initialCaseId = 'case-01', theme, onToggleTheme }) {
   const studies = useCaseStudies()
   const [caseId, setCaseId] = useState(initialCaseId)
   const { data, loading } = useProjectData(caseId)
   const [showEdit, setShowEdit] = useState(false)
+  const [user, setUser]         = useState(null)
+  const [showAuth, setShowAuth] = useState(false)
 
   useLayoutEffect(() => { window.scrollTo(0, 0) }, [])
   useReveal(!loading)
+  useEffect(() => onAuthStateChanged(auth, setUser), [])
+
+  const isAdmin = user?.email === 'brandon.johnson0416@gmail.com'
 
   const handleExport = () => {
     const json = JSON.stringify(data, null, 2)
@@ -645,14 +648,14 @@ export default function ProjectDetail({ onBack, caseId: initialCaseId = 'case-01
 
   if (loading) {
     return (
-      <div className="loading-screen">
+      <div className={`n${theme === 'light' ? ' n--light' : ''} loading-screen`}>
         <span className="loading-screen__logo">Methodic</span>
       </div>
     )
   }
 
   return (
-    <div className="app">
+    <div className={`n${theme === 'light' ? ' n--light' : ''}`}>
       <ScrollProgress />
       <Navbar
         onBack={onBack}
@@ -661,6 +664,9 @@ export default function ProjectDetail({ onBack, caseId: initialCaseId = 'case-01
         studies={studies}
         onEdit={() => setShowEdit(true)}
         onExport={handleExport}
+        isAdmin={isAdmin}
+        theme={theme}
+        onToggleTheme={onToggleTheme}
       />
 
       <main className="main">
@@ -673,7 +679,8 @@ export default function ProjectDetail({ onBack, caseId: initialCaseId = 'case-01
         <Outcomes data={data} />
         <CTA onBack={onBack} />
       </main>
-      <Footer />
+      <Footer user={user} onShowAuth={() => setShowAuth(true)} />
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
       {showEdit && (
         <EditModal
           data={data}
