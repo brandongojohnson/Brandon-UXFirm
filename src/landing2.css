@@ -3,7 +3,7 @@
 ───────────────────────────────────── */
 
 .n {
-  --bg:         #070707;
+  --bg:         #000000;
   --surface:    rgba(255, 255, 255, 0.04);
   --surface-hi: rgba(255, 255, 255, 0.07);
   --border:     rgba(255, 255, 255, 0.08);
@@ -15,8 +15,8 @@
   --quote:      rgba(239, 239, 239, 0.88);
   --faint:      rgba(255, 255, 255, 0.2);
   --faint-hi:   rgba(255, 255, 255, 0.28);
-  --accent:     #7c5cbf;
-  --nav-bg:     rgba(7, 7, 7, 0.92);
+  --accent:     #aaaaaa;
+  --nav-bg:     rgba(0, 0, 0, 0.92);
   --nav-link:   rgba(255, 255, 255, 0.45);
   --nav-link-hover: #ffffff;
   --dropdown-bg: #111;
@@ -48,8 +48,8 @@
   --hairline-10:      var(--border);
   --hairline-20:      var(--border);
   --hairline-30:      var(--border-hi);
-  --bg-40:            rgba(7, 7, 7, 0.4);
-  --bg-80:            rgba(7, 7, 7, 0.8);
+  --bg-40:            rgba(0, 0, 0, 0.4);
+  --bg-80:            rgba(0, 0, 0, 0.8);
   --font-sans:        var(--font);
   --font-serif:       var(--font);
   --container-pad:    var(--pad);
@@ -70,7 +70,7 @@
 }
 
 .n--light {
-  --bg:         #faf9f7;
+  --bg:         #ffffff;
   --surface:    rgba(0, 0, 0, 0.035);
   --surface-hi: rgba(0, 0, 0, 0.06);
   --border:     rgba(0, 0, 0, 0.09);
@@ -82,8 +82,8 @@
   --quote:      rgba(22, 22, 22, 0.85);
   --faint:      rgba(0, 0, 0, 0.18);
   --faint-hi:   rgba(0, 0, 0, 0.32);
-  --accent:     #6b4aaf;
-  --nav-bg:     rgba(250, 249, 247, 0.92);
+  --accent:     #666666;
+  --nav-bg:     rgba(255, 255, 255, 0.92);
   --nav-link:   rgba(0, 0, 0, 0.4);
   --nav-link-hover: rgba(0, 0, 0, 0.9);
   --dropdown-bg: #ffffff;
@@ -96,8 +96,9 @@
   --surface-low:      #ffffff;
   --surface-high:     rgba(0, 0, 0, 0.06);
   --surface-highest:  rgba(0, 0, 0, 0.1);
-  --bg-40:            rgba(250, 249, 247, 0.4);
-  --bg-80:            rgba(250, 249, 247, 0.8);
+  --bg-40:            rgba(255, 255, 255, 0.4);
+  --bg-80:            rgba(255, 255, 255, 0.8);
+  --surface-low:      #f4f4f4;
 }
 
 /* ─── Layout ─── */
@@ -381,13 +382,27 @@
 /* ─── Hero ─── */
 
 .n-hero {
+  position: relative;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   text-align: center;
-  padding: 160px 0 0;
+  padding: 160px 0 120px;
   border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.n-hero::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to bottom, transparent, var(--bg));
+  z-index: 1;
+  pointer-events: none;
 }
 
 .n-hero__inner {
@@ -401,6 +416,8 @@
   align-self: center;
   flex: 1;
   justify-content: center;
+  position: relative;
+  z-index: 2;
 }
 
 .n-hero__h1 {
@@ -408,14 +425,14 @@
   font-weight: 700;
   line-height: 1.0;
   letter-spacing: -0.045em;
-  color: var(--text);
+  color: #ffffff;
   max-width: 860px;
 }
 
 .n-hero__sub {
   font-size: 17px;
   line-height: 1.72;
-  color: var(--muted);
+  color: rgba(255, 255, 255, 0.68);
   max-width: 520px;
 }
 
@@ -435,6 +452,65 @@
   margin-top: 64px;
   flex-shrink: 0;
   align-self: center;
+}
+
+.n-hero__image {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.n-hero__image::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.38);
+}
+
+.n-hero__img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  filter: brightness(0.85);
+}
+
+/* ─── Logo Strip ─── */
+
+.n-logos {
+  border-bottom: 1px solid var(--border);
+  padding: 40px 0;
+}
+
+.n-logos__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.n-logos__label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.n-logos__row {
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.n-logos__item {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-soft);
+  transition: color 0.2s;
 }
 
 /* ─── About ─── */
@@ -468,6 +544,17 @@
 }
 
 .n-about__body p:first-child { color: var(--text); }
+
+.n-about__photo {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  filter: grayscale(1);
+  border: 2px solid var(--border-hi);
+  display: block;
+  margin-bottom: 4px;
+}
 
 /* ─── Capabilities ─── */
 
@@ -1076,7 +1163,7 @@
   .n-nav__inner { padding: 0 24px; gap: 16px; }
   .n-nav__links { display: none; }
 
-  .n-hero { padding: 140px 0 0; min-height: unset; }
+  .n-hero { padding: 120px 0 80px; min-height: unset; }
   .n-hero__inner { padding: 0 24px; }
   .n-hero__h1 { font-size: clamp(52px, 14vw, 80px); }
   .n-hero__stem { height: 48px; margin-top: 40px; }

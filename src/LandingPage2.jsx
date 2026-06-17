@@ -4,6 +4,7 @@ import { ref as dbRef, onValue } from 'firebase/database'
 import { auth, db } from './firebase'
 import AuthModal from './AuthModal'
 import './landing2.css'
+import heroImg from './hero-bg.jpg'
 
 function toArr(v) {
   if (!v) return []
@@ -98,6 +99,9 @@ function Navbar({ theme, onToggleTheme }) {
 function Hero() {
   return (
     <section className="n-hero">
+      <div className="n-hero__image" aria-hidden="true">
+        <img src={heroImg} alt="" className="n-hero__img" />
+      </div>
       <div className="n-hero__inner">
         <h1 className="n-hero__h1" data-reveal="up" data-delay="80">
           Not just another<br />research firm.
@@ -115,7 +119,6 @@ function Hero() {
           </button>
         </div>
       </div>
-      <div className="n-hero__stem" aria-hidden="true" />
     </section>
   )
 }
@@ -126,6 +129,7 @@ function About() {
     <section className="n-about" id="n-about">
       <div className="n-inner n-about__inner">
         <div className="n-about__header" data-reveal="up">
+          <img src={headshotImg} alt="Founder" className="n-about__photo" />
           <p className="n-eyebrow">About the firm</p>
           <h2 className="n-section-title">Research-led, founder-run.</h2>
         </div>
@@ -143,6 +147,22 @@ function About() {
         </div>
       </div>
     </section>
+  )
+}
+
+/* ─── Logo Strip ─── */
+const CLIENTS = ['Acme', 'BuildStack', 'Nexus', 'Orbit Labs', 'Quantify', 'Stellar']
+
+function LogoStrip() {
+  return (
+    <div className="n-logos">
+      <div className="n-inner n-logos__inner">
+        <p className="n-logos__label">Trusted by product teams at</p>
+        <div className="n-logos__row">
+          {CLIENTS.map((c) => <span key={c} className="n-logos__item">{c}</span>)}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -500,7 +520,6 @@ export default function LandingPage2({ onNavigate, theme, onToggleTheme }) {
       <Navbar theme={theme} onToggleTheme={onToggleTheme} />
       <main>
         <Hero />
-        {/* <About /> */}
         <Capabilities />
         <Process />
         <Testimonials />
