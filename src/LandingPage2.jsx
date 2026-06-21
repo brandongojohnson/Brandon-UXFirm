@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
-import { ref as dbRef, onValue } from 'firebase/database'
-import { auth, db } from './firebase'
+import { ref as dbRef, onValue, set } from 'firebase/database'
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { auth, db, storage } from './firebase'
 import AuthModal from './AuthModal'
 import './landing2.css'
 import heroImg from './hero-bg.jpg'
@@ -53,6 +54,26 @@ function scrollToId(id) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
 }
 
+function analyzeImageBrightness(src, onResult) {
+  const img = new Image()
+  img.crossOrigin = 'anonymous'
+  img.onload = () => {
+    const scale = 0.05
+    const canvas = document.createElement('canvas')
+    canvas.width  = Math.max(1, Math.floor(img.naturalWidth  * scale))
+    canvas.height = Math.max(1, Math.floor(img.naturalHeight * scale))
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+    const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    let sum = 0
+    for (let i = 0; i < data.length; i += 4)
+      sum += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]
+    onResult(sum / (data.length / 4) > 140)
+  }
+  img.onerror = () => onResult(false)
+  img.src = src
+}
+
 /* ─── Navbar ─── */
 const NAV = [
   { label: 'Capabilities', id: 'n-capabilities' },
@@ -95,12 +116,237 @@ function Navbar({ theme, onToggleTheme }) {
   )
 }
 
-/* ─── Hero ─── */
-function Hero() {
+/* ─── Hero Image Editor ─── */
+function HeroImageEditor({ src, settings, onChange }) {
+  const containerRef = useRef(null)
+  const startRef = useRef(null)
+  const settingsRef = useRef(settings)
+  useEffect(() => { settingsRef.current = settings }, [settings])
+
+  function onPointerDown(e) {
+    containerRef.current?.setPointerCapture(e.pointerId)
+    startRef.current = {
+      x: e.clientX, y: e.clientY,
+      posX: settingsRef.current.positionX,
+      posY: settingsRef.current.positionY,
+    }
+    e.preventDefault()
+  }
+  function onPointerMove(e) {
+    if (!startRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const scale = settingsRef.current.scale
+    // Normalize drag by overflow amount so 1px drag = 1px visual pan
+    const overflow = Math.max(scale - 1, 0.001)
+    const dx = (e.clientX - startRef.current.x) / rect.width  * 100 / overflow
+    const dy = (e.clientY - startRef.current.y) / rect.height * 100 / overflow
+    onChange({
+      positionX: Math.min(100, Math.max(0, startRef.current.posX - dx)),
+      positionY: Math.min(100, Math.max(0, startRef.current.posY - dy)),
+    })
+  }
+  function onPointerUp() { startRef.current = null }
+
   return (
-    <section className="n-hero">
+    <div className="n-hero-editor">
+      <div
+        ref={containerRef}
+        className="n-hero-editor__preview"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      >
+        <img
+          src={src}
+          draggable="false"
+          style={{
+            objectFit: settings.objectFit,
+            width:  `${settings.scale * 100}%`,
+            height: `${settings.scale * 100}%`,
+            left: `${(1 - settings.scale) * settings.positionX}%`,
+            top:  `${(1 - settings.scale) * settings.positionY}%`,
+          }}
+        />
+        <div className="n-hero__overlay" style={{ opacity: settings.overlayOpacity }} />
+        <div className="n-hero-editor__hint">
+          <span className="material-symbols-outlined">open_with</span>
+          Drag to reposition
+        </div>
+      </div>
+      <div className="n-hero-editor__controls">
+        <div className="n-hero-editor__row">
+          <span className="n-hero-editor__label">Fit</span>
+          <div className="n-hero-editor__fit-btns">
+            {['cover', 'contain', 'fill'].map((f) => (
+              <button
+                key={f}
+                className={`n-hero-editor__fit-btn${settings.objectFit === f ? ' is-active' : ''}`}
+                onClick={() => onChange({ objectFit: f })}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="n-hero-editor__row">
+          <span className="n-hero-editor__label">Zoom</span>
+          <input
+            type="range"
+            className="n-hero-editor__slider"
+            min="1" max="3" step="0.01"
+            value={settings.scale}
+            onChange={(e) => onChange({ scale: parseFloat(e.target.value) })}
+          />
+          <span className="n-hero-editor__val">{Math.round(settings.scale * 100)}%</span>
+        </div>
+        <div className="n-hero-editor__row">
+          <span className="n-hero-editor__label">Dim</span>
+          <input
+            type="range"
+            className="n-hero-editor__slider"
+            min="0" max="1" step="0.01"
+            value={settings.overlayOpacity}
+            onChange={(e) => onChange({ overlayOpacity: parseFloat(e.target.value) })}
+          />
+          <span className="n-hero-editor__val">{Math.round((settings.overlayOpacity ?? 0.38) * 100)}%</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ─── Hero ─── */
+function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave }) {
+  const imgSrc = heroImageUrl || heroImg
+  const [editOpen, setEditOpen] = useState(false)
+  const [urlVal,   setUrlVal]   = useState('')
+  const [pending,  setPending]  = useState(null) // { src, file?, url?, settings }
+  const [saving,   setSaving]   = useState(false)
+  const wrapRef = useRef(null)
+
+  useEffect(() => {
+    if (!editOpen && !pending) return
+    const handler = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) { setEditOpen(false) } }
+    window.addEventListener('mousedown', handler)
+    return () => window.removeEventListener('mousedown', handler)
+  }, [editOpen, pending])
+
+  function selectFile(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    setPending({ src: URL.createObjectURL(file), file, settings: { ...heroSettings } })
+    setEditOpen(false)
+  }
+
+  function submitUrl(e) {
+    e.preventDefault()
+    const u = urlVal.trim()
+    if (u) { setPending({ src: u, url: u, settings: { ...heroSettings } }); setUrlVal(''); setEditOpen(false) }
+  }
+
+  function openAdjust() {
+    setPending({ src: imgSrc, settings: { ...heroSettings } })
+    setEditOpen(false)
+  }
+
+  function updatePendingSettings(patch) {
+    setPending((p) => ({ ...p, settings: { ...p.settings, ...patch } }))
+  }
+
+  async function confirmSave() {
+    setSaving(true)
+    try {
+      let url = pending.url || heroImageUrl
+      if (pending.file) {
+        const sRef = storageRef(storage, `hero/${Date.now()}-${pending.file.name}`)
+        const snap = await uploadBytes(sRef, pending.file)
+        url = await getDownloadURL(snap.ref)
+      }
+      await onHeroSave(url, pending.settings)
+      if (pending.file) URL.revokeObjectURL(pending.src)
+    } finally {
+      setSaving(false)
+      setPending(null)
+    }
+  }
+
+  function cancelPending() {
+    if (pending?.file) URL.revokeObjectURL(pending.src)
+    setPending(null)
+  }
+
+  return (
+    <section className={`n-hero${heroTextDark ? ' n-hero--light-img' : ''}`}>
       <div className="n-hero__image" aria-hidden="true">
-        <img src={heroImg} alt="" className="n-hero__img" />
+        <img
+          src={imgSrc}
+          alt=""
+          className="n-hero__img"
+          style={{
+            objectFit: heroSettings.objectFit,
+            width:  `${heroSettings.scale * 100}%`,
+            height: `${heroSettings.scale * 100}%`,
+            left: `${(1 - heroSettings.scale) * heroSettings.positionX}%`,
+            top:  `${(1 - heroSettings.scale) * heroSettings.positionY}%`,
+          }}
+        />
+        <div className="n-hero__overlay" style={{ opacity: heroSettings.overlayOpacity }} />
+      </div>
+      {isAdmin && (
+        <div className="n-hero__edit-wrap" ref={wrapRef}>
+          <button className="n-hero__edit" onClick={() => setEditOpen(o => !o)}>
+            <span className="material-symbols-outlined">photo_camera</span>
+            Edit photo
+          </button>
+          {pending && (
+            <div className="n-hero__confirm">
+              <HeroImageEditor
+                src={pending.src}
+                settings={pending.settings}
+                onChange={updatePendingSettings}
+              />
+              <div className="n-hero__confirm-btns">
+                <button className="n-hero__confirm-save" onClick={confirmSave} disabled={saving}>
+                  <span className="material-symbols-outlined">{saving ? 'hourglass_empty' : 'check'}</span>
+                  {saving ? 'Saving…' : 'Save'}
+                </button>
+                <button className="n-hero__confirm-cancel" onClick={cancelPending} disabled={saving}>Cancel</button>
+              </div>
+            </div>
+          )}
+          {!pending && editOpen && (
+            <div className="n-hero__edit-panel">
+              <button className="n-hero__edit-option" onClick={openAdjust}>
+                <span className="material-symbols-outlined">tune</span>
+                Adjust position &amp; fit
+              </button>
+              <div className="n-hero__edit-divider" />
+              <label className="n-hero__edit-option">
+                <span className="material-symbols-outlined">upload</span>
+                Upload new image
+                <input type="file" accept="image/*" hidden onChange={selectFile} />
+              </label>
+              <div className="n-hero__edit-divider" />
+              <form className="n-hero__edit-url" onSubmit={submitUrl}>
+                <input
+                  type="url"
+                  className="n-hero__edit-input"
+                  placeholder="Paste image URL…"
+                  value={urlVal}
+                  onChange={(e) => setUrlVal(e.target.value)}
+                  autoFocus
+                />
+                <button type="submit" className="n-hero__edit-submit">
+                  <span className="material-symbols-outlined">arrow_forward</span>
+                </button>
+              </form>
+            </div>
+          )}
+        </div>
+      )}
+      <div className="n-hero__blur" aria-hidden="true">
+        <div /><div /><div /><div />
       </div>
       <div className="n-hero__inner">
         <h1 className="n-hero__h1" data-reveal="up" data-delay="80">
@@ -455,12 +701,9 @@ const FOOTER_COLS = [
   { head: 'Legal',    links: ['Privacy Policy', 'Terms of Service'] },
 ]
 
-function Footer() {
-  const [user, setUser]         = useState(null)
+function Footer({ user }) {
   const [showAuth, setShowAuth] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-
-  useEffect(() => onAuthStateChanged(auth, setUser), [])
 
   useEffect(() => {
     if (!menuOpen) return
@@ -515,11 +758,50 @@ export default function LandingPage2({ onNavigate, theme, onToggleTheme }) {
   const studies = useAllStudies()
   useReveal()
 
+  const [user, setUser] = useState(null)
+  useEffect(() => onAuthStateChanged(auth, setUser), [])
+  const isAdmin = !!user
+
+  const [heroImageUrl, setHeroImageUrl] = useState(null)
+  const [heroTextDark, setHeroTextDark] = useState(false)
+  const [heroSettings, setHeroSettings] = useState({ objectFit: 'cover', positionX: 50, positionY: 50, scale: 1, overlayOpacity: 0.38 })
+
+  useEffect(() => {
+    return onValue(dbRef(db, 'siteSettings/heroImageUrl'), (snap) => {
+      if (snap.exists()) setHeroImageUrl(snap.val())
+    })
+  }, [])
+
+  useEffect(() => {
+    return onValue(dbRef(db, 'siteSettings/heroSettings'), (snap) => {
+      if (snap.exists()) setHeroSettings(snap.val())
+    })
+  }, [])
+
+  useEffect(() => {
+    analyzeImageBrightness(heroImageUrl || heroImg, setHeroTextDark)
+  }, [heroImageUrl])
+
+  async function handleHeroSave(url, settings) {
+    if (url) {
+      await set(dbRef(db, 'siteSettings/heroImageUrl'), url)
+      setHeroImageUrl(url)
+    }
+    await set(dbRef(db, 'siteSettings/heroSettings'), settings)
+    setHeroSettings(settings)
+  }
+
   return (
     <div className={`n${theme === 'light' ? ' n--light' : ''}`}>
       <Navbar theme={theme} onToggleTheme={onToggleTheme} />
       <main>
-        <Hero />
+        <Hero
+          isAdmin={isAdmin}
+          heroImageUrl={heroImageUrl}
+          heroTextDark={heroTextDark}
+          heroSettings={heroSettings}
+          onHeroSave={handleHeroSave}
+        />
         <Capabilities />
         <Process />
         <Testimonials />
@@ -527,7 +809,7 @@ export default function LandingPage2({ onNavigate, theme, onToggleTheme }) {
         <FAQ />
         <ContactCTA />
       </main>
-      <Footer />
+      <Footer user={user} />
     </div>
   )
 }

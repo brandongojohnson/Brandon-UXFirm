@@ -5,7 +5,7 @@ import ProjectDetail from './ProjectDetail'
 export default function App() {
   const [page, setPage]           = useState('home')
   const [activeCaseId, setActiveCaseId] = useState('case-01')
-  const [theme, setTheme]         = useState(() => localStorage.getItem('n-theme') || 'light')
+  const [theme, setTheme]         = useState(() => localStorage.getItem('n-theme') || 'dark')
 
   useEffect(() => { localStorage.setItem('n-theme', theme) }, [theme])
 
