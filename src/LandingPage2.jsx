@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
-import { ref as dbRef, onValue, set } from 'firebase/database'
+import { ref as dbRef, onValue, set, remove } from 'firebase/database'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { auth, db, storage } from './firebase'
 import AuthModal from './AuthModal'
+import ProjectEditor from './ProjectEditor'
 import './landing2.css'
 import heroImg from './hero-bg.jpg'
+import headshotImg from './headshot.jpg'
 
 function toArr(v) {
   if (!v) return []
@@ -479,7 +481,14 @@ function Process() {
 }
 
 /* ─── Featured Work ─── */
-function FeaturedWork({ studies, onNavigate }) {
+function FeaturedWork({ studies, onNavigate, isAdmin, onAddProject, onDeleteProject }) {
+  const [confirmDelete, setConfirmDelete] = useState(null)
+
+  async function handleDeleteConfirm(id) {
+    await onDeleteProject?.(id)
+    setConfirmDelete(null)
+  }
+
   useEffect(() => {
     if (!studies) return
     const obs = new IntersectionObserver(
@@ -500,9 +509,17 @@ function FeaturedWork({ studies, onNavigate }) {
             <p className="n-eyebrow">Featured work between ©2023–25</p>
             <h2 className="n-section-title">Selected projects.</h2>
           </div>
-          <a href="#" className="n-text-link" onClick={(e) => e.preventDefault()}>
-            Discover all projects <span>→</span>
-          </a>
+          <div className="n-work__header-right">
+            <a href="#" className="n-text-link" onClick={(e) => e.preventDefault()}>
+              Discover all projects <span>→</span>
+            </a>
+            {isAdmin && (
+              <button className="n-btn n-btn--sm n-btn--outline" onClick={onAddProject}>
+                <span className="material-symbols-outlined" style={{ fontSize: 15 }}>add</span>
+                Add Project
+              </button>
+            )}
+          </div>
         </div>
 
         {studies === undefined && <p className="n-placeholder">Loading case studies…</p>}
@@ -513,7 +530,7 @@ function FeaturedWork({ studies, onNavigate }) {
             {studies.slice(0, 3).map((s, i) => (
               <div key={s.id} className="n-wcard"
                 data-reveal="up" data-delay={i > 0 ? String(i * 80) : undefined}
-                onClick={() => onNavigate?.('project', s.id)}>
+                onClick={() => confirmDelete !== s.id && onNavigate?.('project', s.id)}>
                 {s.imageUrl ? (
                   <div className="n-wcard__img-wrap">
                     <img src={s.imageUrl} alt={s.title} className="n-wcard__img" />
@@ -529,6 +546,25 @@ function FeaturedWork({ studies, onNavigate }) {
                   <h3 className="n-wcard__title">{s.title}</h3>
                   {s.subtitle && <p className="n-wcard__desc">{s.subtitle}</p>}
                 </div>
+                {isAdmin && (
+                  <button
+                    className="n-wcard__delete"
+                    aria-label="Delete project"
+                    onClick={e => { e.stopPropagation(); setConfirmDelete(s.id) }}>
+                    <span className="material-symbols-outlined">delete</span>
+                  </button>
+                )}
+                {isAdmin && confirmDelete === s.id && (
+                  <div className="n-wcard__del-confirm" onClick={e => e.stopPropagation()}>
+                    <span>Delete this project?</span>
+                    <div className="n-wcard__del-actions">
+                      <button className="n-wcard__del-btn n-wcard__del-btn--cancel"
+                        onClick={() => setConfirmDelete(null)}>Cancel</button>
+                      <button className="n-wcard__del-btn n-wcard__del-btn--confirm"
+                        onClick={() => handleDeleteConfirm(s.id)}>Delete</button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -762,6 +798,8 @@ export default function LandingPage2({ onNavigate, theme, onToggleTheme }) {
   useEffect(() => onAuthStateChanged(auth, setUser), [])
   const isAdmin = !!user
 
+  const [showProjectEditor, setShowProjectEditor] = useState(false)
+
   const [heroImageUrl, setHeroImageUrl] = useState(null)
   const [heroTextDark, setHeroTextDark] = useState(false)
   const [heroSettings, setHeroSettings] = useState({ objectFit: 'cover', positionX: 50, positionY: 50, scale: 1, overlayOpacity: 0.38 })
@@ -805,11 +843,12 @@ export default function LandingPage2({ onNavigate, theme, onToggleTheme }) {
         <Capabilities />
         <Process />
         <Testimonials />
-        <FeaturedWork studies={studies} onNavigate={onNavigate} />
+        <FeaturedWork studies={studies} onNavigate={onNavigate} isAdmin={isAdmin} onAddProject={() => setShowProjectEditor(true)} onDeleteProject={id => remove(dbRef(db, 'UXP/' + id))} />
         <FAQ />
         <ContactCTA />
       </main>
       <Footer user={user} />
+      {showProjectEditor && <ProjectEditor onClose={() => setShowProjectEditor(false)} />}
     </div>
   )
 }
