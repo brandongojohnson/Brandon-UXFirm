@@ -351,6 +351,9 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave })
         <div /><div /><div /><div />
       </div>
       <div className="n-hero__inner">
+        <p className="n-hero__eyebrow" data-reveal="up" data-delay="0">
+          Research &amp; Strategy Studio
+        </p>
         <h1 className="n-hero__h1" data-reveal="up" data-delay="80">
           Not just another<br />research firm.
         </h1>
@@ -358,7 +361,7 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave })
           We bridge the gap between what users say and what they mean — through
           clinical observation, rigorous synthesis, and strategy.
         </p>
-        <div className="n-hero__actions" data-reveal="up" data-delay="200">
+        <div className="n-hero__actions" data-reveal="up" data-delay="240">
           <button className="n-btn n-btn--primary n-btn--lg" onClick={() => scrollToId('n-contact')}>
             Start Engagement
           </button>
@@ -848,7 +851,7 @@ export default function LandingPage2({ onNavigate, theme, onToggleTheme }) {
         <ContactCTA />
       </main>
       <Footer user={user} />
-      {showProjectEditor && <ProjectEditor onClose={() => setShowProjectEditor(false)} />}
+      {showProjectEditor && <ProjectEditor studies={studies} onClose={() => setShowProjectEditor(false)} />}
     </div>
   )
 }

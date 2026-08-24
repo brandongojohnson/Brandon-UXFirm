@@ -11,7 +11,7 @@ import './landing2.css'
    Hooks
 ───────────────────────────────────── */
 
-function useReveal(ready) {
+function useReveal(ready, key) {
   useEffect(() => {
     if (!ready) return
     const observer = new IntersectionObserver(
@@ -35,7 +35,7 @@ function useReveal(ready) {
       }
     })
     return () => observer.disconnect()
-  }, [ready])
+  }, [ready, key])
 }
 
 /* ─────────────────────────────────────
@@ -621,8 +621,8 @@ export default function ProjectDetail({ onBack, caseId: initialCaseId = 'case-01
   const [user, setUser]         = useState(null)
   const [showAuth, setShowAuth] = useState(false)
 
-  useLayoutEffect(() => { window.scrollTo(0, 0) }, [])
-  useReveal(!loading)
+  useLayoutEffect(() => { window.scrollTo(0, 0) }, [caseId])
+  useReveal(!loading, data.title)
   useEffect(() => onAuthStateChanged(auth, setUser), [])
 
   const isAdmin = user?.email === 'brandon.johnson0416@gmail.com'

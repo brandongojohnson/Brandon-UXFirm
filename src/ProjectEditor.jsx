@@ -1,6 +1,14 @@
 import React, { useState, useRef } from 'react'
-import { ref as dbRef, push } from 'firebase/database'
+import { ref as dbRef, set } from 'firebase/database'
 import { db } from './firebase'
+
+function nextCaseId(studies) {
+  const max = (studies || []).reduce((m, s) => {
+    const match = /^case-(\d+)$/.exec(s.id ?? s)
+    return match ? Math.max(m, parseInt(match[1], 10)) : m
+  }, 0)
+  return `case-${String(max + 1).padStart(2, '0')}`
+}
 
 const TEMPLATE = {
   title: '',
@@ -55,11 +63,12 @@ function validate(raw) {
   return { ok: true, data: parsed }
 }
 
-export default function ProjectEditor({ onClose }) {
+export default function ProjectEditor({ studies, onClose }) {
   const [json, setJson] = useState('')
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   const taRef = useRef(null)
+  const caseId = nextCaseId(studies)
 
   function loadTemplate() {
     setJson(JSON.stringify(TEMPLATE, null, 2))
@@ -73,7 +82,7 @@ export default function ProjectEditor({ onClose }) {
     setSaving(true)
     setError('')
     try {
-      await push(dbRef(db, 'UXP'), result.data)
+      await set(dbRef(db, `UXP/${caseId}`), result.data)
       onClose()
     } catch {
       setError('Save failed — check your connection and try again.')
@@ -98,7 +107,7 @@ export default function ProjectEditor({ onClose }) {
   return (
     <div className="pe-overlay">
       <div className="pe-header">
-        <h2 className="pe-header__title">Add Project via JSON</h2>
+        <h2 className="pe-header__title">Add Project via JSON <span className="pe-header__caseid">→ will save as {caseId}</span></h2>
         <div className="pe-header__actions">
           <button className="pe-btn pe-btn--ghost" onClick={loadTemplate} disabled={saving}>
             Load template

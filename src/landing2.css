@@ -413,13 +413,13 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  text-align: center;
-  padding: 160px 0 120px;
+  text-align: left;
+  padding: 170px 0 140px;
 }
 
 .n-hero__edit-wrap {
   position: absolute;
-  bottom: calc(35% + 20px);
+  top: 100px;
   right: var(--pad);
   z-index: 3;
   display: flex;
@@ -690,7 +690,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 35%;
+  height: 24%;
   z-index: 1;
   pointer-events: none;
 }
@@ -710,17 +710,39 @@
 .n-hero__inner {
   max-width: var(--max);
   width: 100%;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 28px;
+  align-items: flex-start;
+  gap: 22px;
   padding: 0 var(--pad);
-  align-self: center;
+  align-self: stretch;
   flex: 1;
-  justify-content: center;
+  justify-content: flex-end;
   position: relative;
   z-index: 2;
 }
+
+.n-hero__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.n-hero__eyebrow::before {
+  content: '';
+  width: 28px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.n-hero--light-img .n-hero__eyebrow { color: rgba(0, 0, 0, 0.55); }
+.n-hero--light-img .n-hero__eyebrow::before { background: rgba(0, 0, 0, 0.35); }
 
 .n-hero__h1 {
   font-size: clamp(62px, 10vw, 120px);
@@ -743,7 +765,7 @@
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  justify-content: center;
+  justify-content: flex-start;
   padding-top: 8px;
 }
 
@@ -800,8 +822,8 @@
   inset: 0;
   z-index: 0;
   overflow: hidden;
-  -webkit-mask-image: linear-gradient(to bottom, black 65%, transparent 100%);
-  mask-image: linear-gradient(to bottom, black 65%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 76%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 76%, transparent 100%);
 }
 
 .n-hero__overlay {
@@ -1577,7 +1599,7 @@
   .n-nav__links { display: none; }
 
   .n-hero { padding: 120px 0 80px; min-height: unset; }
-  .n-hero__inner { padding: 0 24px; }
+  .n-hero__inner { padding: 0 24px; max-width: 100%; }
   .n-hero__h1 { font-size: clamp(52px, 14vw, 80px); }
   .n-hero__stem { height: 48px; margin-top: 40px; }
 
@@ -1636,6 +1658,14 @@
   color: #ffffff;
   letter-spacing: -0.02em;
   margin: 0;
+}
+
+.pe-header__caseid {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.45);
+  letter-spacing: 0;
+  margin-left: 4px;
 }
 
 .pe-header__actions {
