@@ -334,6 +334,10 @@ function Challenge({ data }) {
               </p>
             ))}
             <div className="ps__pain-list" data-reveal="up" data-delay="200">
+              <div className="ps__pain-label">
+                <span className="material-symbols-outlined">monitoring</span>
+                Symptoms
+              </div>
               {data.painPoints.map((p) => (
                 <div className="ps__pain-item" key={p.icon}>
                   <span className="material-symbols-outlined ps__pain-icon">{p.icon}</span>
@@ -382,8 +386,8 @@ function Findings({ data }) {
     <section className="ps">
       <div className="ps__inner">
         <div className="ps__label" data-reveal="fade">
-          <span className="material-symbols-outlined">search_insights</span>
-          Key Findings
+          <span className="material-symbols-outlined">report_problem</span>
+          Pain Points
         </div>
         <h2 className="ps__heading" data-reveal="up">{data.findingsHeading}</h2>
         <div className="ps__finding-grid">

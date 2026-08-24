@@ -298,6 +298,21 @@
   border-top: 1px solid var(--hairline-20);
 }
 
+.ps__pain-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--primary-60);
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.ps__pain-label .material-symbols-outlined { font-size: 15px; }
+
 .ps__pain-item {
   display: flex;
   align-items: flex-start;
