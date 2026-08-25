@@ -621,6 +621,12 @@ export default function ProjectDetail({ onBack, caseId: initialCaseId = 'case-01
   const studies = useCaseStudies()
   const [caseId, setCaseId] = useState(initialCaseId)
   const { data, loading } = useProjectData(caseId)
+  const didMount = useRef(false)
+
+  useEffect(() => {
+    if (!didMount.current) { didMount.current = true; return }
+    window.history.replaceState({}, '', `/case/${caseId}`)
+  }, [caseId])
   const [showEdit, setShowEdit] = useState(false)
   const [user, setUser]         = useState(null)
   const [showAuth, setShowAuth] = useState(false)

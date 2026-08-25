@@ -2,18 +2,38 @@ import { useState, useEffect } from 'react'
 import LandingPage2 from './LandingPage2'
 import ProjectDetail from './ProjectDetail'
 
+function locationFromUrl() {
+  const match = window.location.pathname.match(/^\/case\/([^/]+)\/?$/)
+  return match ? { page: 'project', caseId: match[1] } : { page: 'home', caseId: null }
+}
+
 export default function App() {
-  const [page, setPage]           = useState('home')
-  const [activeCaseId, setActiveCaseId] = useState('case-01')
+  const initial = locationFromUrl()
+  const [page, setPage]           = useState(initial.page)
+  const [activeCaseId, setActiveCaseId] = useState(initial.caseId || 'case-01')
   const [theme, setTheme]         = useState(() => localStorage.getItem('n-theme') || 'dark')
 
   useEffect(() => { localStorage.setItem('n-theme', theme) }, [theme])
 
+  useEffect(() => {
+    const onPopState = () => {
+      const loc = locationFromUrl()
+      setPage(loc.page)
+      if (loc.caseId) setActiveCaseId(loc.caseId)
+      window.scrollTo(0, 0)
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
+
   const toggleTheme = () => setTheme((t) => (t === 'light' ? 'dark' : 'light'))
 
   const navigate = (p, caseId) => {
+    const targetCaseId = caseId || activeCaseId
     if (caseId) setActiveCaseId(caseId)
     setPage(p)
+    const path = p === 'project' ? `/case/${targetCaseId}` : '/'
+    window.history.pushState({}, '', path)
     window.scrollTo(0, 0)
   }
 

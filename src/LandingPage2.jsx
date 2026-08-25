@@ -845,7 +845,6 @@ export default function LandingPage2({ onNavigate, theme, onToggleTheme }) {
         />
         <Capabilities />
         <Process />
-        <Testimonials />
         <FeaturedWork studies={studies} onNavigate={onNavigate} isAdmin={isAdmin} onAddProject={() => setShowProjectEditor(true)} onDeleteProject={id => remove(dbRef(db, 'UXP/' + id))} />
         <FAQ />
         <ContactCTA />
