@@ -218,14 +218,167 @@ function HeroImageEditor({ src, settings, onChange }) {
   )
 }
 
+const clamp = (v, min, max) => Math.min(max, Math.max(min, v))
+
+// Minimum y position (% of hero height) for the draggable text block — keeps the toolbar,
+// rendered 44px above the block, clear of the fixed nav bar. The toolbar lives inside the
+// scaled element, so its effective offset grows with scale too — account for that here
+// rather than with a flat percentage, or it stops being enough clearance at higher zoom.
+function minTextY(scale, heroHeight) {
+  const clearancePx = 44 * scale + 90 // scaled toolbar offset + nav height buffer
+  return Math.min(60, clearancePx / heroHeight * 100)
+}
+
+// Distance used to drive resize-scale: edge handles measure only the axis they're on
+// (so a slightly diagonal drag on a side handle doesn't skew the result), corners use
+// the true diagonal — matching standard resize-handle behavior in design tools.
+function axisDistance(axis, dx, dy) {
+  if (axis === 'x') return Math.abs(dx)
+  if (axis === 'y') return Math.abs(dy)
+  return Math.hypot(dx, dy)
+}
+
+// ax/ay = fractional point (0..1) within the block that stays fixed while resizing —
+// e.g. the bottom-right handle anchors the top-left corner (0,0), so the block grows down-right.
+const RESIZE_HANDLES = [
+  { pos: 'n',  ax: 0.5, ay: 1,   axis: 'y',    cursor: 'ns-resize'   },
+  { pos: 's',  ax: 0.5, ay: 0,   axis: 'y',    cursor: 'ns-resize'   },
+  { pos: 'e',  ax: 0,   ay: 0.5, axis: 'x',    cursor: 'ew-resize'   },
+  { pos: 'w',  ax: 1,   ay: 0.5, axis: 'x',    cursor: 'ew-resize'   },
+  { pos: 'ne', ax: 0,   ay: 1,   axis: 'both', cursor: 'nesw-resize' },
+  { pos: 'nw', ax: 1,   ay: 1,   axis: 'both', cursor: 'nwse-resize' },
+  { pos: 'se', ax: 0,   ay: 0,   axis: 'both', cursor: 'nwse-resize' },
+  { pos: 'sw', ax: 1,   ay: 0,   axis: 'both', cursor: 'nesw-resize' },
+]
+
 /* ─── Hero ─── */
-function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave }) {
+function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, heroTextSettings, onHeroTextSave, onHeroTextReset }) {
   const imgSrc = heroImageUrl || heroImg
   const [editOpen, setEditOpen] = useState(false)
   const [urlVal,   setUrlVal]   = useState('')
   const [pending,  setPending]  = useState(null) // { src, file?, url?, settings }
   const [saving,   setSaving]   = useState(false)
   const wrapRef = useRef(null)
+
+  const heroRef  = useRef(null)
+  const innerRef = useRef(null)
+  const textDragRef = useRef(null)
+  // pendingText: an in-progress, unsaved edit the admin is previewing. null = nothing staged,
+  // render whatever's actually saved (heroTextSettings). Requires an explicit Save to persist.
+  const [pendingText, setPendingText] = useState(null)
+  const pendingTextRef = useRef(null)
+  const displayText = pendingText ?? heroTextSettings
+
+  function updatePendingText(next) {
+    pendingTextRef.current = next
+    setPendingText(next)
+  }
+
+  function textBasePosition() {
+    if (displayText) return displayText
+    const heroRect  = heroRef.current.getBoundingClientRect()
+    const blockRect = innerRef.current.getBoundingClientRect()
+    return {
+      x: (blockRect.left - heroRect.left) / heroRect.width * 100,
+      y: (blockRect.top - heroRect.top) / heroRect.height * 100,
+      scale: 1,
+      // Preserve the block's actual natural-flow width so switching into custom
+      // positioning never snaps the text to an unrelated fixed width (which was
+      // reflowing/wrapping the paragraph text the instant a drag started).
+      widthPct: blockRect.width / heroRect.width * 100,
+    }
+  }
+
+  function startTextMove(e) {
+    e.preventDefault()
+    const base = textBasePosition()
+    textDragRef.current = {
+      mode: 'move',
+      startClientX: e.clientX, startClientY: e.clientY,
+      heroRect: heroRef.current.getBoundingClientRect(),
+      base,
+    }
+    window.addEventListener('pointermove', onTextDragMove)
+    window.addEventListener('pointerup', onTextDragEnd)
+  }
+
+  // ax/ay: fractional point (0..1) within the block to keep fixed on screen while scaling.
+  // axis: 'x' | 'y' | 'both' — which pointer-movement axis drives the scale ratio. Edge handles
+  // (N/S/E/W) lock to a single axis so drifting slightly off-axis while dragging a side doesn't
+  // change the result; corner handles use the diagonal, matching standard resize-handle behavior.
+  function startTextResize(e, ax, ay, axis) {
+    e.preventDefault()
+    e.stopPropagation()
+    const base = textBasePosition()
+    const heroRect  = heroRef.current.getBoundingClientRect()
+    const blockRect = innerRef.current.getBoundingClientRect()
+    const naturalW = blockRect.width  / base.scale
+    const naturalH = blockRect.height / base.scale
+    const anchorScreenX = blockRect.left + ax * blockRect.width
+    const anchorScreenY = blockRect.top  + ay * blockRect.height
+    const initDist = axisDistance(axis, e.clientX - anchorScreenX, e.clientY - anchorScreenY) || 1
+    textDragRef.current = {
+      mode: 'resize', ax, ay, axis, anchorScreenX, anchorScreenY, naturalW, naturalH, initDist, heroRect, base,
+    }
+    window.addEventListener('pointermove', onTextDragMove)
+    window.addEventListener('pointerup', onTextDragEnd)
+  }
+
+  function onTextDragMove(e) {
+    const d = textDragRef.current
+    if (!d) return
+    if (d.mode === 'move') {
+      const dxPct = (e.clientX - d.startClientX) / d.heroRect.width  * 100
+      const dyPct = (e.clientY - d.startClientY) / d.heroRect.height * 100
+      updatePendingText({
+        x: clamp(d.base.x + dxPct, 0, 85),
+        // Keep the toolbar (rendered ~44px above the block) clear of the fixed nav bar.
+        y: clamp(d.base.y + dyPct, minTextY(d.base.scale, d.heroRect.height), 85),
+        scale: d.base.scale,
+        widthPct: d.base.widthPct,
+      })
+    } else {
+      const dist = axisDistance(d.axis, e.clientX - d.anchorScreenX, e.clientY - d.anchorScreenY) || 1
+      const scale = clamp(d.base.scale * (dist / d.initDist), 0.5, 2.2)
+      const newLeft = d.anchorScreenX - d.ax * d.naturalW * scale
+      const newTop  = d.anchorScreenY - d.ay * d.naturalH * scale
+      updatePendingText({
+        x: clamp((newLeft - d.heroRect.left) / d.heroRect.width  * 100, 0, 95),
+        y: clamp((newTop  - d.heroRect.top)  / d.heroRect.height * 100, minTextY(scale, d.heroRect.height), 95),
+        scale,
+        widthPct: d.base.widthPct,
+      })
+    }
+  }
+
+  function onTextDragEnd() {
+    window.removeEventListener('pointermove', onTextDragMove)
+    window.removeEventListener('pointerup', onTextDragEnd)
+    textDragRef.current = null
+    // Intentionally does NOT save — the admin reviews the result and clicks Save/Cancel.
+  }
+
+  function handleSizeInput(e) {
+    const pct = parseFloat(e.target.value)
+    if (Number.isNaN(pct)) return
+    const base = textBasePosition()
+    updatePendingText({ x: base.x, y: base.y, scale: clamp(pct / 100, 0.5, 2.2), widthPct: base.widthPct })
+  }
+
+  async function confirmTextEdit() {
+    if (!pendingTextRef.current) return
+    await onHeroTextSave(pendingTextRef.current)
+    updatePendingText(null)
+  }
+
+  function cancelTextEdit() {
+    updatePendingText(null)
+  }
+
+  function handleTextReset() {
+    updatePendingText(null)
+    onHeroTextReset()
+  }
 
   useEffect(() => {
     if (!editOpen && !pending) return
@@ -279,7 +432,7 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave })
   }
 
   return (
-    <section className={`n-hero${heroTextDark ? ' n-hero--light-img' : ''}`}>
+    <section className={`n-hero${heroTextDark ? ' n-hero--light-img' : ''}`} ref={heroRef}>
       <div className="n-hero__image" aria-hidden="true">
         <img
           src={imgSrc}
@@ -350,7 +503,58 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave })
       <div className="n-hero__blur" aria-hidden="true">
         <div /><div /><div /><div />
       </div>
-      <div className="n-hero__inner">
+      <div
+        className={`n-hero__inner${isAdmin ? ' n-hero__inner--editable' : ''}${displayText ? ' n-hero__inner--custom' : ''}`}
+        ref={innerRef}
+        style={displayText ? {
+          position: 'absolute',
+          left: `${displayText.x}%`,
+          top: `${displayText.y}%`,
+          width: `${displayText.widthPct}%`,
+          transform: `scale(${displayText.scale})`,
+          transformOrigin: 'top left',
+        } : undefined}
+      >
+        {isAdmin && (
+          <div className="n-hero__text-toolbar">
+            <button
+              className="n-hero__text-handle"
+              onPointerDown={startTextMove}
+              title="Drag to move"
+            >
+              <span className="material-symbols-outlined">open_with</span>
+            </button>
+            <label className="n-hero__text-size" title="Text size">
+              <input
+                type="number"
+                min={50} max={220} step={5}
+                value={Math.round((displayText?.scale ?? 1) * 100)}
+                onChange={handleSizeInput}
+              />
+              <span>%</span>
+            </label>
+            {heroTextSettings && (
+              <button
+                className="n-hero__text-reset"
+                onClick={handleTextReset}
+                title="Reset position &amp; size"
+              >
+                <span className="material-symbols-outlined">restart_alt</span>
+              </button>
+            )}
+          </div>
+        )}
+        {isAdmin && pendingText && (
+          <div className="n-hero__text-confirm">
+            <button className="n-hero__text-confirm-save" onClick={confirmTextEdit}>
+              <span className="material-symbols-outlined">check</span>
+              Save
+            </button>
+            <button className="n-hero__text-confirm-cancel" onClick={cancelTextEdit}>
+              Cancel
+            </button>
+          </div>
+        )}
         <p className="n-hero__eyebrow" data-reveal="up" data-delay="0">
           Research &amp; Strategy Studio
         </p>
@@ -369,6 +573,15 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave })
             View Archive
           </button>
         </div>
+        {isAdmin && RESIZE_HANDLES.map((h) => (
+          <div
+            key={h.pos}
+            className={`n-hero__text-resize n-hero__text-resize--${h.pos}`}
+            style={{ cursor: h.cursor }}
+            onPointerDown={(e) => startTextResize(e, h.ax, h.ay, h.axis)}
+            title="Drag to resize"
+          />
+        ))}
       </div>
     </section>
   )
@@ -806,6 +1019,7 @@ export default function LandingPage2({ onNavigate, theme, onToggleTheme }) {
   const [heroImageUrl, setHeroImageUrl] = useState(null)
   const [heroTextDark, setHeroTextDark] = useState(false)
   const [heroSettings, setHeroSettings] = useState({ objectFit: 'cover', positionX: 50, positionY: 50, scale: 1, overlayOpacity: 0.38 })
+  const [heroTextSettings, setHeroTextSettings] = useState(null)
 
   useEffect(() => {
     return onValue(dbRef(db, 'siteSettings/heroImageUrl'), (snap) => {
@@ -816,6 +1030,12 @@ export default function LandingPage2({ onNavigate, theme, onToggleTheme }) {
   useEffect(() => {
     return onValue(dbRef(db, 'siteSettings/heroSettings'), (snap) => {
       if (snap.exists()) setHeroSettings(snap.val())
+    })
+  }, [])
+
+  useEffect(() => {
+    return onValue(dbRef(db, 'siteSettings/heroTextSettings'), (snap) => {
+      setHeroTextSettings(snap.exists() ? snap.val() : null)
     })
   }, [])
 
@@ -832,6 +1052,16 @@ export default function LandingPage2({ onNavigate, theme, onToggleTheme }) {
     setHeroSettings(settings)
   }
 
+  async function handleHeroTextSave(settings) {
+    await set(dbRef(db, 'siteSettings/heroTextSettings'), settings)
+    setHeroTextSettings(settings)
+  }
+
+  async function handleHeroTextReset() {
+    await remove(dbRef(db, 'siteSettings/heroTextSettings'))
+    setHeroTextSettings(null)
+  }
+
   return (
     <div className={`n${theme === 'light' ? ' n--light' : ''}`}>
       <Navbar theme={theme} onToggleTheme={onToggleTheme} />
@@ -842,6 +1072,9 @@ export default function LandingPage2({ onNavigate, theme, onToggleTheme }) {
           heroTextDark={heroTextDark}
           heroSettings={heroSettings}
           onHeroSave={handleHeroSave}
+          heroTextSettings={heroTextSettings}
+          onHeroTextSave={handleHeroTextSave}
+          onHeroTextReset={handleHeroTextReset}
         />
         <Capabilities />
         <Process />
