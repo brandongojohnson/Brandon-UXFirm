@@ -229,26 +229,24 @@ function minTextY(scale, heroHeight) {
   return Math.min(60, clearancePx / heroHeight * 100)
 }
 
-// Distance used to drive resize-scale: edge handles measure only the axis they're on
-// (so a slightly diagonal drag on a side handle doesn't skew the result), corners use
-// the true diagonal — matching standard resize-handle behavior in design tools.
-function axisDistance(axis, dx, dy) {
-  if (axis === 'x') return Math.abs(dx)
-  if (axis === 'y') return Math.abs(dy)
-  return Math.hypot(dx, dy)
-}
+// Minimum box dimensions while resizing, in px.
+const MIN_TEXT_W = 200
+const MIN_TEXT_H = 80
 
-// ax/ay = fractional point (0..1) within the block that stays fixed while resizing —
-// e.g. the bottom-right handle anchors the top-left corner (0,0), so the block grows down-right.
+// Text-box model: handles resize the BOX like a design tool's text frame — the dragged
+// edge follows the pointer, the opposite edge stays put, and the text reflows/wraps at
+// its current font size (it is never stretched to fit the box). Font size is changed
+// only via the numeric input in the toolbar. Each handle's `pos` names the edges it
+// moves ('ne' moves the north and east edges, etc.).
 const RESIZE_HANDLES = [
-  { pos: 'n',  ax: 0.5, ay: 1,   axis: 'y',    cursor: 'ns-resize'   },
-  { pos: 's',  ax: 0.5, ay: 0,   axis: 'y',    cursor: 'ns-resize'   },
-  { pos: 'e',  ax: 0,   ay: 0.5, axis: 'x',    cursor: 'ew-resize'   },
-  { pos: 'w',  ax: 1,   ay: 0.5, axis: 'x',    cursor: 'ew-resize'   },
-  { pos: 'ne', ax: 0,   ay: 1,   axis: 'both', cursor: 'nesw-resize' },
-  { pos: 'nw', ax: 1,   ay: 1,   axis: 'both', cursor: 'nwse-resize' },
-  { pos: 'se', ax: 0,   ay: 0,   axis: 'both', cursor: 'nwse-resize' },
-  { pos: 'sw', ax: 1,   ay: 0,   axis: 'both', cursor: 'nesw-resize' },
+  { pos: 'n',  cursor: 'ns-resize'   },
+  { pos: 's',  cursor: 'ns-resize'   },
+  { pos: 'e',  cursor: 'ew-resize'   },
+  { pos: 'w',  cursor: 'ew-resize'   },
+  { pos: 'ne', cursor: 'nesw-resize' },
+  { pos: 'nw', cursor: 'nwse-resize' },
+  { pos: 'se', cursor: 'nwse-resize' },
+  { pos: 'sw', cursor: 'nesw-resize' },
 ]
 
 /* ─── Hero ─── */
@@ -274,8 +272,12 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, h
     setPendingText(next)
   }
 
+  // Settings shape: x/y/widthPct (and heightPct once a vertical edge has been dragged) are
+  // the box's on-screen geometry as percentages of the hero; heightPct null = auto, box hugs
+  // its content. scale is the text-size multiplier — independent of the box, set only by the
+  // numeric input, never by resize handles.
   function textBasePosition() {
-    if (displayText) return displayText
+    if (displayText) return { heightPct: null, ...displayText }
     const heroRect  = heroRef.current.getBoundingClientRect()
     const blockRect = innerRef.current.getBoundingClientRect()
     return {
@@ -286,6 +288,7 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, h
       // positioning never snaps the text to an unrelated fixed width (which was
       // reflowing/wrapping the paragraph text the instant a drag started).
       widthPct: blockRect.width / heroRect.width * 100,
+      heightPct: null,
     }
   }
 
@@ -302,23 +305,18 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, h
     window.addEventListener('pointerup', onTextDragEnd)
   }
 
-  // ax/ay: fractional point (0..1) within the block to keep fixed on screen while scaling.
-  // axis: 'x' | 'y' | 'both' — which pointer-movement axis drives the scale ratio. Edge handles
-  // (N/S/E/W) lock to a single axis so drifting slightly off-axis while dragging a side doesn't
-  // change the result; corner handles use the diagonal, matching standard resize-handle behavior.
-  function startTextResize(e, ax, ay, axis) {
+  // pos: which edges this handle moves ('w', 'se', …). The dragged edge tracks the pointer;
+  // the opposite edge stays fixed. Text reflows at its current size — never stretched.
+  function startTextResize(e, pos) {
     e.preventDefault()
     e.stopPropagation()
     const base = textBasePosition()
     const heroRect  = heroRef.current.getBoundingClientRect()
     const blockRect = innerRef.current.getBoundingClientRect()
-    const naturalW = blockRect.width  / base.scale
-    const naturalH = blockRect.height / base.scale
-    const anchorScreenX = blockRect.left + ax * blockRect.width
-    const anchorScreenY = blockRect.top  + ay * blockRect.height
-    const initDist = axisDistance(axis, e.clientX - anchorScreenX, e.clientY - anchorScreenY) || 1
     textDragRef.current = {
-      mode: 'resize', ax, ay, axis, anchorScreenX, anchorScreenY, naturalW, naturalH, initDist, heroRect, base,
+      mode: 'resize', pos, heroRect, base,
+      left: blockRect.left, right: blockRect.right,
+      top: blockRect.top, bottom: blockRect.bottom,
     }
     window.addEventListener('pointermove', onTextDragMove)
     window.addEventListener('pointerup', onTextDragEnd)
@@ -336,17 +334,26 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, h
         y: clamp(d.base.y + dyPct, minTextY(d.base.scale, d.heroRect.height), 85),
         scale: d.base.scale,
         widthPct: d.base.widthPct,
+        heightPct: d.base.heightPct ?? null,
       })
     } else {
-      const dist = axisDistance(d.axis, e.clientX - d.anchorScreenX, e.clientY - d.anchorScreenY) || 1
-      const scale = clamp(d.base.scale * (dist / d.initDist), 0.5, 2.2)
-      const newLeft = d.anchorScreenX - d.ax * d.naturalW * scale
-      const newTop  = d.anchorScreenY - d.ay * d.naturalH * scale
+      let { left, right, top, bottom } = d
+      const minTopPx = d.heroRect.top + minTextY(d.base.scale, d.heroRect.height) / 100 * d.heroRect.height
+      if (d.pos.includes('e')) right  = clamp(e.clientX, left + MIN_TEXT_W, d.heroRect.right)
+      if (d.pos.includes('w')) left   = clamp(e.clientX, d.heroRect.left, right - MIN_TEXT_W)
+      if (d.pos.includes('s')) bottom = clamp(e.clientY, top + MIN_TEXT_H, d.heroRect.bottom)
+      if (d.pos.includes('n')) top    = clamp(e.clientY, minTopPx, bottom - MIN_TEXT_H)
+      // Height becomes explicit only once a vertical edge is dragged; until then the box
+      // hugs its content, so pure side drags let wrapping grow/shrink the box naturally.
+      const touchesHeight = d.pos.includes('n') || d.pos.includes('s')
       updatePendingText({
-        x: clamp((newLeft - d.heroRect.left) / d.heroRect.width  * 100, 0, 95),
-        y: clamp((newTop  - d.heroRect.top)  / d.heroRect.height * 100, minTextY(scale, d.heroRect.height), 95),
-        scale,
-        widthPct: d.base.widthPct,
+        x: (left - d.heroRect.left) / d.heroRect.width  * 100,
+        y: (top  - d.heroRect.top)  / d.heroRect.height * 100,
+        scale: d.base.scale,
+        widthPct: (right - left) / d.heroRect.width * 100,
+        heightPct: touchesHeight
+          ? (bottom - top) / d.heroRect.height * 100
+          : (d.base.heightPct ?? null),
       })
     }
   }
@@ -358,11 +365,18 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, h
     // Intentionally does NOT save — the admin reviews the result and clicks Save/Cancel.
   }
 
+  // Changes the text size only — the box keeps its on-screen geometry, so larger text
+  // wraps into more lines within the same box, exactly like a design tool's font-size field.
   function handleSizeInput(e) {
     const pct = parseFloat(e.target.value)
     if (Number.isNaN(pct)) return
     const base = textBasePosition()
-    updatePendingText({ x: base.x, y: base.y, scale: clamp(pct / 100, 0.5, 2.2), widthPct: base.widthPct })
+    updatePendingText({
+      x: base.x, y: base.y,
+      scale: clamp(pct / 100, 0.5, 2.2),
+      widthPct: base.widthPct,
+      heightPct: base.heightPct ?? null,
+    })
   }
 
   async function confirmTextEdit() {
@@ -510,7 +524,11 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, h
           position: 'absolute',
           left: `${displayText.x}%`,
           top: `${displayText.y}%`,
-          width: `${displayText.widthPct}%`,
+          // widthPct/heightPct describe the box's ON-SCREEN size; layout dimensions are
+          // divided by the text-size scale so the transform lands back on the intended
+          // box, and text wraps at the box's visual width regardless of font scale.
+          width: `${displayText.widthPct / displayText.scale}%`,
+          height: displayText.heightPct ? `${displayText.heightPct / displayText.scale}%` : undefined,
           transform: `scale(${displayText.scale})`,
           transformOrigin: 'top left',
         } : undefined}
@@ -578,7 +596,7 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, h
             key={h.pos}
             className={`n-hero__text-resize n-hero__text-resize--${h.pos}`}
             style={{ cursor: h.cursor }}
-            onPointerDown={(e) => startTextResize(e, h.ax, h.ay, h.axis)}
+            onPointerDown={(e) => startTextResize(e, h.pos)}
             title="Drag to resize"
           />
         ))}
