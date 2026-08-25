@@ -776,7 +776,9 @@
 
 .n-hero__text-confirm {
   position: absolute;
-  top: -44px;
+  /* Stacked above the toolbar row (not beside it) — the toolbar has grown wide enough
+     with the size stepper + presets that sharing a row would collide on a narrow box. */
+  top: -88px;
   right: 0;
   z-index: 4;
   display: flex;
@@ -835,7 +837,7 @@
 }
 
 .n-hero__text-size input {
-  width: 34px;
+  width: 28px;
   background: none;
   border: none;
   outline: none;
@@ -847,7 +849,40 @@
 }
 .n-hero__text-size input::-webkit-outer-spin-button,
 .n-hero__text-size input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-.n-hero__text-size span { color: rgba(255,255,255,0.5); }
+.n-hero__text-size-suffix { color: rgba(255,255,255,0.5); }
+
+.n-hero__text-size-step {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.65);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+.n-hero__text-size-step:hover { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
+.n-hero__text-size-step .material-symbols-outlined { font-size: 15px; }
+
+.n-hero__text-size-preset {
+  appearance: none;
+  -webkit-appearance: none;
+  background: none;
+  border: none;
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+  outline: none;
+  color: rgba(255, 255, 255, 0.65);
+  font-family: var(--font);
+  font-size: 11px;
+  padding: 0 4px 0 8px;
+  margin-left: 2px;
+  cursor: pointer;
+}
+.n-hero__text-size-preset:hover { color: #ffffff; }
+.n-hero__text-size-preset option { background: #111; color: #fff; }
 
 .n-hero__text-resize {
   position: absolute;

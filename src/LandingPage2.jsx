@@ -225,7 +225,8 @@ const clamp = (v, min, max) => Math.min(max, Math.max(min, v))
 // scaled element, so its effective offset grows with scale too — account for that here
 // rather than with a flat percentage, or it stops being enough clearance at higher zoom.
 function minTextY(scale, heroHeight) {
-  const clearancePx = 44 * scale + 90 // scaled toolbar offset + nav height buffer
+  // 88px covers the confirm bar, which stacks above the toolbar row when both show.
+  const clearancePx = 88 * scale + 90 // scaled offset + nav height buffer
   return Math.min(60, clearancePx / heroHeight * 100)
 }
 
@@ -367,16 +368,25 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, h
 
   // Changes the text size only — the box keeps its on-screen geometry, so larger text
   // wraps into more lines within the same box, exactly like a design tool's font-size field.
-  function handleSizeInput(e) {
-    const pct = parseFloat(e.target.value)
-    if (Number.isNaN(pct)) return
+  function setTextScale(scale) {
     const base = textBasePosition()
     updatePendingText({
       x: base.x, y: base.y,
-      scale: clamp(pct / 100, 0.5, 2.2),
+      scale: clamp(scale, 0.5, 2.2),
       widthPct: base.widthPct,
       heightPct: base.heightPct ?? null,
     })
+  }
+
+  function handleSizeInput(e) {
+    const pct = parseFloat(e.target.value)
+    if (Number.isNaN(pct)) return
+    setTextScale(pct / 100)
+  }
+
+  function stepTextSize(deltaPct) {
+    const currentPct = Math.round((textBasePosition().scale) * 100)
+    setTextScale((currentPct + deltaPct) / 100)
   }
 
   async function confirmTextEdit() {
@@ -542,15 +552,42 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, h
             >
               <span className="material-symbols-outlined">open_with</span>
             </button>
-            <label className="n-hero__text-size" title="Text size">
+            <div className="n-hero__text-size" title="Text size">
+              <button
+                type="button"
+                className="n-hero__text-size-step"
+                onClick={() => stepTextSize(-5)}
+                title="Decrease text size"
+              >
+                <span className="material-symbols-outlined">text_decrease</span>
+              </button>
               <input
                 type="number"
                 min={50} max={220} step={5}
                 value={Math.round((displayText?.scale ?? 1) * 100)}
                 onChange={handleSizeInput}
               />
-              <span>%</span>
-            </label>
+              <span className="n-hero__text-size-suffix">%</span>
+              <button
+                type="button"
+                className="n-hero__text-size-step"
+                onClick={() => stepTextSize(5)}
+                title="Increase text size"
+              >
+                <span className="material-symbols-outlined">text_increase</span>
+              </button>
+              <select
+                className="n-hero__text-size-preset"
+                title="Preset sizes"
+                value=""
+                onChange={(e) => { if (e.target.value) setTextScale(parseFloat(e.target.value) / 100) }}
+              >
+                <option value="" disabled>Presets</option>
+                {[50, 75, 100, 125, 150, 175, 200].map((p) => (
+                  <option key={p} value={p}>{p}%</option>
+                ))}
+              </select>
+            </div>
             {heroTextSettings && (
               <button
                 className="n-hero__text-reset"
