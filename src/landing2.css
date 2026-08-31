@@ -24,7 +24,7 @@
   --ease:       cubic-bezier(0.16, 1, 0.3, 1);
   --font:       'Geist', 'Helvetica Neue', Arial, sans-serif;
   --max:        1200px;
-  --pad:        80px;
+  --pad:        0px;
 
   /* ─── Compat aliases — map index.css tokens → new design tokens ─── */
   --primary:          var(--text);
@@ -51,7 +51,7 @@
   --bg-40:            rgba(0, 0, 0, 0.4);
   --bg-80:            rgba(0, 0, 0, 0.8);
   --font-sans:        var(--font);
-  --font-serif:       var(--font);
+  --font-serif:       'Hedvig Letters Serif', Georgia, 'Times New Roman', serif;
   --container-pad:    var(--pad);
   --section-gap:      120px;
   --gutter:           24px;
@@ -120,10 +120,11 @@
 }
 
 .n-section-title {
-  font-size: clamp(36px, 5vw, 60px);
-  font-weight: 700;
+  font-family: var(--font-serif);
+  font-size: 50px;
+  font-weight: 500;
   line-height: 1.05;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.01em;
   color: var(--text);
 }
 
@@ -261,9 +262,10 @@
 }
 
 .n-nav__logo {
-  font-size: 17px;
+  font-family: var(--font-serif);
+  font-size: 19px;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   color: var(--text);
   text-decoration: none;
   flex-shrink: 0;
@@ -481,11 +483,51 @@
 .n-hero__edit-option:hover { background: rgba(255,255,255,0.08); color: #ffffff; }
 .n-hero__edit-option .material-symbols-outlined { font-size: 16px; }
 
+.n-hero__edit-option--danger:hover { background: rgba(200, 30, 30, 0.18); color: #ff6b6b; }
+
 .n-hero__edit-divider {
   height: 1px;
   background: rgba(255,255,255,0.08);
   margin: 2px 0;
 }
+
+.n-hero__edit-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 6px 4px;
+}
+
+.n-hero__edit-confirm p {
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0;
+}
+
+.n-hero__edit-confirm-actions { display: flex; gap: 8px; }
+
+.n-hero__edit-confirm-btn {
+  flex: 1;
+  padding: 7px 0;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: var(--font);
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.85);
+  transition: background 0.15s, color 0.15s;
+}
+.n-hero__edit-confirm-btn:hover { background: rgba(255, 255, 255, 0.12); }
+
+.n-hero__edit-confirm-btn--danger {
+  background: rgba(200, 30, 30, 0.85);
+  border-color: transparent;
+  color: #fff;
+}
+.n-hero__edit-confirm-btn--danger:hover { background: #e02020; }
 
 .n-hero__edit-url {
   display: flex;
@@ -643,6 +685,21 @@
   flex-shrink: 0;
 }
 
+.n-hero__confirm-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  background: rgba(200, 30, 30, 0.15);
+  border: 1px solid rgba(200, 30, 30, 0.35);
+  border-radius: 6px;
+  color: #ff8080;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.n-hero__confirm-error .material-symbols-outlined { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+
 .n-hero__confirm-btns {
   display: flex;
   gap: 8px;
@@ -714,225 +771,19 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 22px;
   padding: 0 var(--pad);
   align-self: stretch;
   flex: 1;
   justify-content: flex-end;
   position: relative;
-  /* Higher than .n-hero__edit-wrap (z-index: 3) so the text-block's own move/resize/confirm
-     controls — which live inside this stacking context — can never end up trapped beneath it. */
   z-index: 5;
 }
-
-.n-hero__inner--editable {
-  outline: 1px dashed rgba(255, 255, 255, 0.3);
-  outline-offset: 12px;
-}
-
-.n-hero__inner.n-hero__inner--custom {
-  /* width is set inline (widthPct) to match the block's natural size exactly —
-     this class only clears the flow-layout properties that would otherwise conflict. */
-  max-width: none;
-  margin: 0;
-  padding: 0;
-  align-self: auto;
-  flex: none;
-  justify-content: flex-start;
-}
-
-.n-hero__text-toolbar {
-  position: absolute;
-  top: -44px;
-  left: 0;
-  z-index: 4;
-  display: flex;
-  gap: 8px;
-}
-
-.n-hero__text-handle,
-.n-hero__text-reset {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  color: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  cursor: grab;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-}
-
-.n-hero__text-handle:active { cursor: grabbing; }
-.n-hero__text-reset { cursor: pointer; }
-.n-hero__text-handle:hover,
-.n-hero__text-reset:hover { background: rgba(0, 0, 0, 0.8); color: #ffffff; border-color: rgba(255,255,255,0.35); }
-.n-hero__text-handle .material-symbols-outlined,
-.n-hero__text-reset .material-symbols-outlined { font-size: 17px; }
-
-.n-hero__text-confirm {
-  position: absolute;
-  /* Stacked above the toolbar row (not beside it) — the toolbar has grown wide enough
-     with the size stepper + presets that sharing a row would collide on a narrow box. */
-  top: -88px;
-  right: 0;
-  z-index: 4;
-  display: flex;
-  gap: 8px;
-}
-
-.n-hero__text-confirm-save {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 14px;
-  height: 32px;
-  background: #ffffff;
-  border: none;
-  border-radius: 8px;
-  color: #000000;
-  font-family: var(--font);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
-.n-hero__text-confirm-save:hover { opacity: 0.85; }
-.n-hero__text-confirm-save .material-symbols-outlined { font-size: 15px; }
-
-.n-hero__text-confirm-cancel {
-  padding: 0 14px;
-  height: 32px;
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  color: rgba(255, 255, 255, 0.75);
-  font-family: var(--font);
-  font-size: 12px;
-  cursor: pointer;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  transition: background 0.15s, color 0.15s;
-}
-.n-hero__text-confirm-cancel:hover { background: rgba(0, 0, 0, 0.8); color: #ffffff; }
-
-.n-hero__text-size {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 10px;
-  height: 32px;
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  color: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  font-family: var(--font);
-  font-size: 12px;
-}
-
-.n-hero__text-size input {
-  width: 28px;
-  background: none;
-  border: none;
-  outline: none;
-  color: #ffffff;
-  font-family: var(--font);
-  font-size: 12px;
-  text-align: right;
-  -moz-appearance: textfield;
-}
-.n-hero__text-size input::-webkit-outer-spin-button,
-.n-hero__text-size input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-.n-hero__text-size-suffix { color: rgba(255,255,255,0.5); }
-
-.n-hero__text-size-step {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.65);
-  cursor: pointer;
-  border-radius: 4px;
-  transition: background 0.15s, color 0.15s;
-}
-.n-hero__text-size-step:hover { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
-.n-hero__text-size-step .material-symbols-outlined { font-size: 15px; }
-
-.n-hero__text-size-preset {
-  appearance: none;
-  -webkit-appearance: none;
-  background: none;
-  border: none;
-  border-left: 1px solid rgba(255, 255, 255, 0.15);
-  outline: none;
-  color: rgba(255, 255, 255, 0.65);
-  font-family: var(--font);
-  font-size: 11px;
-  padding: 0 4px 0 8px;
-  margin-left: 2px;
-  cursor: pointer;
-}
-.n-hero__text-size-preset:hover { color: #ffffff; }
-.n-hero__text-size-preset option { background: #111; color: #fff; }
-
-.n-hero__text-resize {
-  position: absolute;
-  z-index: 4;
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.5);
-  border-radius: 3px;
-  transition: transform 0.1s;
-}
-
-.n-hero__text-resize:hover { transform: scale(1.3); }
-
-/* Corner handles: small squares */
-.n-hero__text-resize--nw, .n-hero__text-resize--ne,
-.n-hero__text-resize--sw, .n-hero__text-resize--se {
-  width: 10px;
-  height: 10px;
-}
-.n-hero__text-resize--nw { top: -5px;  left: -5px; }
-.n-hero__text-resize--ne { top: -5px;  right: -5px; }
-.n-hero__text-resize--sw { bottom: -5px; left: -5px; }
-.n-hero__text-resize--se { bottom: -5px; right: -5px; }
-
-/* Edge handles: thin bars along each side */
-.n-hero__text-resize--n, .n-hero__text-resize--s {
-  width: 32px;
-  height: 6px;
-  left: 50%;
-  transform: translateX(-50%);
-}
-.n-hero__text-resize--n:hover, .n-hero__text-resize--s:hover { transform: translateX(-50%) scale(1.2); }
-.n-hero__text-resize--n { top: -3px; }
-.n-hero__text-resize--s { bottom: -3px; }
-
-.n-hero__text-resize--e, .n-hero__text-resize--w {
-  width: 6px;
-  height: 32px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-.n-hero__text-resize--e:hover, .n-hero__text-resize--w:hover { transform: translateY(-50%) scale(1.2); }
-.n-hero__text-resize--e { right: -3px; }
-.n-hero__text-resize--w { left: -3px; }
 
 .n-hero__eyebrow {
   display: flex;
   align-items: center;
   gap: 10px;
   font-size: 12px;
-  font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.75);
@@ -948,20 +799,29 @@
 .n-hero--light-img .n-hero__eyebrow { color: rgba(0, 0, 0, 0.55); }
 .n-hero--light-img .n-hero__eyebrow::before { background: rgba(0, 0, 0, 0.35); }
 
+/* Wraps the eyebrow/h1/sub/actions as one block — this div's width is what
+   determines where the hero text wraps, not each child's own max-width. */
+.n-hero__content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 22px;
+  max-width: min(440px, 44vw);
+}
+
 .n-hero__h1 {
-  font-size: clamp(62px, 10vw, 120px);
-  font-weight: 700;
-  line-height: 1.0;
-  letter-spacing: -0.045em;
+  font-family: var(--font-serif);
+  font-size: clamp(40px, 3.4vw, 68px);
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
   color: #ffffff;
-  max-width: 860px;
 }
 
 .n-hero__sub {
   font-size: 17px;
   line-height: 1.72;
   color: rgba(255, 255, 255, 0.68);
-  max-width: 520px;
 }
 
 .n-hero__actions {
@@ -1037,11 +897,30 @@
   pointer-events: none;
 }
 
+/* Directional vignette — dark behind the text column, fading to transparent toward
+   the right/top so the photo itself stays visible and un-muddied. */
+.n-hero__gradient {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.82) 20%, rgba(0, 0, 0, 0) 66%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0) 30%);
+}
+
+.n-hero--light-img .n-hero__gradient {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.82) 20%, rgba(255, 255, 255, 0) 66%),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0) 30%);
+}
+
 .n-hero__img {
   position: absolute;
   display: block;
   object-fit: cover;
   filter: brightness(0.85);
+  will-change: transform;
 }
 
 /* ─── Logo Strip ─── */
@@ -1480,8 +1359,10 @@
 }
 
 .n-testi__quote {
+  font-family: var(--font-serif);
+  font-style: italic;
   font-size: clamp(18px, 2.5vw, 26px);
-  font-weight: 300;
+  font-weight: 400;
   line-height: 1.55;
   letter-spacing: -0.01em;
   color: var(--quote);
@@ -1636,10 +1517,11 @@
 }
 
 .n-cta__title {
+  font-family: var(--font-serif);
   font-size: clamp(36px, 5vw, 56px);
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.08;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.01em;
   color: var(--text);
 }
 
@@ -1725,9 +1607,10 @@
 }
 
 .n-footer__logo {
-  font-size: 19px;
+  font-family: var(--font-serif);
+  font-size: 21px;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   color: var(--text);
 }
 
@@ -1802,8 +1685,17 @@
   .n-nav__inner { padding: 0 24px; gap: 16px; }
   .n-nav__links { display: none; }
 
-  .n-hero { padding: 120px 0 80px; min-height: unset; }
-  .n-hero__inner { padding: 0 24px; max-width: 100%; }
+  /* .n-hero has no min-height here (avoids dead space on short mobile content), but its
+     base `justify-content: flex-end` — meant to bottom-anchor content within the full
+     desktop viewport height — combined with an auto-height column container is a
+     collapse trap: .n-hero shrinks to just its own padding and .n-hero__inner overflows
+     into the next section instead of contributing to its parent's height. flex-start
+     resolves it (there's no extra space to push into once the container is auto-sized
+     to content anyway). Also override .n-hero__inner's own `flex: 1` (implies
+     flex-basis: 0%, the same trap one level down) with content-based sizing. */
+  .n-hero { padding: 120px 0 80px; min-height: unset; justify-content: flex-start; }
+  .n-hero__inner { padding: 0 24px; max-width: 100%; flex: none; }
+  .n-hero__content { max-width: 100%; }
   .n-hero__h1 { font-size: clamp(52px, 14vw, 80px); }
   .n-hero__stem { height: 48px; margin-top: 40px; }
 

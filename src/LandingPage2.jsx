@@ -6,7 +6,7 @@ import { auth, db, storage } from './firebase'
 import AuthModal from './AuthModal'
 import ProjectEditor from './ProjectEditor'
 import './landing2.css'
-import heroImg from './hero-bg.jpg'
+import heroImg from './hero-bg-2.jpg'
 import headshotImg from './headshot.jpg'
 
 function toArr(v) {
@@ -218,191 +218,42 @@ function HeroImageEditor({ src, settings, onChange }) {
   )
 }
 
-const clamp = (v, min, max) => Math.min(max, Math.max(min, v))
-
-// Minimum y position (% of hero height) for the draggable text block — keeps the toolbar,
-// rendered 44px above the block, clear of the fixed nav bar. The toolbar lives inside the
-// scaled element, so its effective offset grows with scale too — account for that here
-// rather than with a flat percentage, or it stops being enough clearance at higher zoom.
-function minTextY(scale, heroHeight) {
-  // 88px covers the confirm bar, which stacks above the toolbar row when both show.
-  const clearancePx = 88 * scale + 90 // scaled offset + nav height buffer
-  return Math.min(60, clearancePx / heroHeight * 100)
-}
-
-// Minimum box dimensions while resizing, in px.
-const MIN_TEXT_W = 200
-const MIN_TEXT_H = 80
-
-// Text-box model: handles resize the BOX like a design tool's text frame — the dragged
-// edge follows the pointer, the opposite edge stays put, and the text reflows/wraps at
-// its current font size (it is never stretched to fit the box). Font size is changed
-// only via the numeric input in the toolbar. Each handle's `pos` names the edges it
-// moves ('ne' moves the north and east edges, etc.).
-const RESIZE_HANDLES = [
-  { pos: 'n',  cursor: 'ns-resize'   },
-  { pos: 's',  cursor: 'ns-resize'   },
-  { pos: 'e',  cursor: 'ew-resize'   },
-  { pos: 'w',  cursor: 'ew-resize'   },
-  { pos: 'ne', cursor: 'nesw-resize' },
-  { pos: 'nw', cursor: 'nwse-resize' },
-  { pos: 'se', cursor: 'nwse-resize' },
-  { pos: 'sw', cursor: 'nesw-resize' },
-]
+const DEFAULT_HERO_SETTINGS = { objectFit: 'cover', positionX: 50, positionY: 50, scale: 1, overlayOpacity: 0.38 }
 
 /* ─── Hero ─── */
-function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, heroTextSettings, onHeroTextSave, onHeroTextReset }) {
+function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, onHeroRemove }) {
   const imgSrc = heroImageUrl || heroImg
   const [editOpen, setEditOpen] = useState(false)
   const [urlVal,   setUrlVal]   = useState('')
   const [pending,  setPending]  = useState(null) // { src, file?, url?, settings }
   const [saving,   setSaving]   = useState(false)
+  const [saveError, setSaveError] = useState(null)
+  const [removeConfirm, setRemoveConfirm] = useState(false)
   const wrapRef = useRef(null)
+  const parallaxImgRef = useRef(null)
 
-  const heroRef  = useRef(null)
-  const innerRef = useRef(null)
-  const textDragRef = useRef(null)
-  // pendingText: an in-progress, unsaved edit the admin is previewing. null = nothing staged,
-  // render whatever's actually saved (heroTextSettings). Requires an explicit Save to persist.
-  const [pendingText, setPendingText] = useState(null)
-  const pendingTextRef = useRef(null)
-  const displayText = pendingText ?? heroTextSettings
+  useEffect(() => { if (!editOpen) setRemoveConfirm(false) }, [editOpen])
 
-  function updatePendingText(next) {
-    pendingTextRef.current = next
-    setPendingText(next)
-  }
-
-  // Settings shape: x/y/widthPct (and heightPct once a vertical edge has been dragged) are
-  // the box's on-screen geometry as percentages of the hero; heightPct null = auto, box hugs
-  // its content. scale is the text-size multiplier — independent of the box, set only by the
-  // numeric input, never by resize handles.
-  function textBasePosition() {
-    if (displayText) return { heightPct: null, ...displayText }
-    const heroRect  = heroRef.current.getBoundingClientRect()
-    const blockRect = innerRef.current.getBoundingClientRect()
-    return {
-      x: (blockRect.left - heroRect.left) / heroRect.width * 100,
-      y: (blockRect.top - heroRect.top) / heroRect.height * 100,
-      scale: 1,
-      // Preserve the block's actual natural-flow width so switching into custom
-      // positioning never snaps the text to an unrelated fixed width (which was
-      // reflowing/wrapping the paragraph text the instant a drag started).
-      widthPct: blockRect.width / heroRect.width * 100,
-      heightPct: null,
+  // Background moves slower than the page scrolls, mutated directly on the DOM node
+  // (rather than via React state) so it doesn't re-render the whole hero every scroll tick.
+  useEffect(() => {
+    let ticking = false
+    function apply() {
+      if (parallaxImgRef.current) {
+        parallaxImgRef.current.style.transform = `translateY(${window.scrollY * 0.18}px)`
+      }
+      ticking = false
     }
-  }
-
-  function startTextMove(e) {
-    e.preventDefault()
-    const base = textBasePosition()
-    textDragRef.current = {
-      mode: 'move',
-      startClientX: e.clientX, startClientY: e.clientY,
-      heroRect: heroRef.current.getBoundingClientRect(),
-      base,
+    function onScroll() {
+      if (!ticking) {
+        ticking = true
+        requestAnimationFrame(apply)
+      }
     }
-    window.addEventListener('pointermove', onTextDragMove)
-    window.addEventListener('pointerup', onTextDragEnd)
-  }
-
-  // pos: which edges this handle moves ('w', 'se', …). The dragged edge tracks the pointer;
-  // the opposite edge stays fixed. Text reflows at its current size — never stretched.
-  function startTextResize(e, pos) {
-    e.preventDefault()
-    e.stopPropagation()
-    const base = textBasePosition()
-    const heroRect  = heroRef.current.getBoundingClientRect()
-    const blockRect = innerRef.current.getBoundingClientRect()
-    textDragRef.current = {
-      mode: 'resize', pos, heroRect, base,
-      left: blockRect.left, right: blockRect.right,
-      top: blockRect.top, bottom: blockRect.bottom,
-    }
-    window.addEventListener('pointermove', onTextDragMove)
-    window.addEventListener('pointerup', onTextDragEnd)
-  }
-
-  function onTextDragMove(e) {
-    const d = textDragRef.current
-    if (!d) return
-    if (d.mode === 'move') {
-      const dxPct = (e.clientX - d.startClientX) / d.heroRect.width  * 100
-      const dyPct = (e.clientY - d.startClientY) / d.heroRect.height * 100
-      updatePendingText({
-        x: clamp(d.base.x + dxPct, 0, 85),
-        // Keep the toolbar (rendered ~44px above the block) clear of the fixed nav bar.
-        y: clamp(d.base.y + dyPct, minTextY(d.base.scale, d.heroRect.height), 85),
-        scale: d.base.scale,
-        widthPct: d.base.widthPct,
-        heightPct: d.base.heightPct ?? null,
-      })
-    } else {
-      let { left, right, top, bottom } = d
-      const minTopPx = d.heroRect.top + minTextY(d.base.scale, d.heroRect.height) / 100 * d.heroRect.height
-      if (d.pos.includes('e')) right  = clamp(e.clientX, left + MIN_TEXT_W, d.heroRect.right)
-      if (d.pos.includes('w')) left   = clamp(e.clientX, d.heroRect.left, right - MIN_TEXT_W)
-      if (d.pos.includes('s')) bottom = clamp(e.clientY, top + MIN_TEXT_H, d.heroRect.bottom)
-      if (d.pos.includes('n')) top    = clamp(e.clientY, minTopPx, bottom - MIN_TEXT_H)
-      // Height becomes explicit only once a vertical edge is dragged; until then the box
-      // hugs its content, so pure side drags let wrapping grow/shrink the box naturally.
-      const touchesHeight = d.pos.includes('n') || d.pos.includes('s')
-      updatePendingText({
-        x: (left - d.heroRect.left) / d.heroRect.width  * 100,
-        y: (top  - d.heroRect.top)  / d.heroRect.height * 100,
-        scale: d.base.scale,
-        widthPct: (right - left) / d.heroRect.width * 100,
-        heightPct: touchesHeight
-          ? (bottom - top) / d.heroRect.height * 100
-          : (d.base.heightPct ?? null),
-      })
-    }
-  }
-
-  function onTextDragEnd() {
-    window.removeEventListener('pointermove', onTextDragMove)
-    window.removeEventListener('pointerup', onTextDragEnd)
-    textDragRef.current = null
-    // Intentionally does NOT save — the admin reviews the result and clicks Save/Cancel.
-  }
-
-  // Changes the text size only — the box keeps its on-screen geometry, so larger text
-  // wraps into more lines within the same box, exactly like a design tool's font-size field.
-  function setTextScale(scale) {
-    const base = textBasePosition()
-    updatePendingText({
-      x: base.x, y: base.y,
-      scale: clamp(scale, 0.5, 2.2),
-      widthPct: base.widthPct,
-      heightPct: base.heightPct ?? null,
-    })
-  }
-
-  function handleSizeInput(e) {
-    const pct = parseFloat(e.target.value)
-    if (Number.isNaN(pct)) return
-    setTextScale(pct / 100)
-  }
-
-  function stepTextSize(deltaPct) {
-    const currentPct = Math.round((textBasePosition().scale) * 100)
-    setTextScale((currentPct + deltaPct) / 100)
-  }
-
-  async function confirmTextEdit() {
-    if (!pendingTextRef.current) return
-    await onHeroTextSave(pendingTextRef.current)
-    updatePendingText(null)
-  }
-
-  function cancelTextEdit() {
-    updatePendingText(null)
-  }
-
-  function handleTextReset() {
-    updatePendingText(null)
-    onHeroTextReset()
-  }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    apply()
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   useEffect(() => {
     if (!editOpen && !pending) return
@@ -414,6 +265,7 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, h
   function selectFile(e) {
     const file = e.target.files[0]
     if (!file) return
+    setSaveError(null)
     setPending({ src: URL.createObjectURL(file), file, settings: { ...heroSettings } })
     setEditOpen(false)
   }
@@ -421,10 +273,16 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, h
   function submitUrl(e) {
     e.preventDefault()
     const u = urlVal.trim()
-    if (u) { setPending({ src: u, url: u, settings: { ...heroSettings } }); setUrlVal(''); setEditOpen(false) }
+    if (u) {
+      setSaveError(null)
+      setPending({ src: u, url: u, settings: { ...heroSettings } })
+      setUrlVal('')
+      setEditOpen(false)
+    }
   }
 
   function openAdjust() {
+    setSaveError(null)
     setPending({ src: imgSrc, settings: { ...heroSettings } })
     setEditOpen(false)
   }
@@ -435,30 +293,48 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, h
 
   async function confirmSave() {
     setSaving(true)
+    setSaveError(null)
     try {
       let url = pending.url || heroImageUrl
       if (pending.file) {
         const sRef = storageRef(storage, `hero/${Date.now()}-${pending.file.name}`)
-        const snap = await uploadBytes(sRef, pending.file)
+        // Storage uploads can hang indefinitely on a bad connection with no error —
+        // bound it so the admin always gets a result instead of a stuck "Saving…" button.
+        const snap = await Promise.race([
+          uploadBytes(sRef, pending.file),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Upload timed out. Check your connection and try again.')), 30000)),
+        ])
         url = await getDownloadURL(snap.ref)
       }
       await onHeroSave(url, pending.settings)
       if (pending.file) URL.revokeObjectURL(pending.src)
+      setPending(null)
+    } catch (err) {
+      // Keep `pending` set so the admin doesn't lose their selection and can retry —
+      // a failed save used to fail silently (finally cleared pending either way).
+      setSaveError(err.message || 'Something went wrong. Please try again.')
     } finally {
       setSaving(false)
-      setPending(null)
     }
   }
 
   function cancelPending() {
     if (pending?.file) URL.revokeObjectURL(pending.src)
     setPending(null)
+    setSaveError(null)
+  }
+
+  async function handleRemovePhoto() {
+    setRemoveConfirm(false)
+    setEditOpen(false)
+    await onHeroRemove()
   }
 
   return (
-    <section className={`n-hero${heroTextDark ? ' n-hero--light-img' : ''}`} ref={heroRef}>
+    <section className={`n-hero${heroTextDark ? ' n-hero--light-img' : ''}`}>
       <div className="n-hero__image" aria-hidden="true">
         <img
+          ref={parallaxImgRef}
           src={imgSrc}
           alt=""
           className="n-hero__img"
@@ -471,6 +347,7 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, h
           }}
         />
         <div className="n-hero__overlay" style={{ opacity: heroSettings.overlayOpacity }} />
+        <div className="n-hero__gradient" />
       </div>
       {isAdmin && (
         <div className="n-hero__edit-wrap" ref={wrapRef}>
@@ -485,6 +362,12 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, h
                 settings={pending.settings}
                 onChange={updatePendingSettings}
               />
+              {saveError && (
+                <p className="n-hero__confirm-error">
+                  <span className="material-symbols-outlined">error</span>
+                  {saveError}
+                </p>
+              )}
               <div className="n-hero__confirm-btns">
                 <button className="n-hero__confirm-save" onClick={confirmSave} disabled={saving}>
                   <span className="material-symbols-outlined">{saving ? 'hourglass_empty' : 'check'}</span>
@@ -496,30 +379,61 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, h
           )}
           {!pending && editOpen && (
             <div className="n-hero__edit-panel">
-              <button className="n-hero__edit-option" onClick={openAdjust}>
-                <span className="material-symbols-outlined">tune</span>
-                Adjust position &amp; fit
-              </button>
-              <div className="n-hero__edit-divider" />
-              <label className="n-hero__edit-option">
-                <span className="material-symbols-outlined">upload</span>
-                Upload new image
-                <input type="file" accept="image/*" hidden onChange={selectFile} />
-              </label>
-              <div className="n-hero__edit-divider" />
-              <form className="n-hero__edit-url" onSubmit={submitUrl}>
-                <input
-                  type="url"
-                  className="n-hero__edit-input"
-                  placeholder="Paste image URL…"
-                  value={urlVal}
-                  onChange={(e) => setUrlVal(e.target.value)}
-                  autoFocus
-                />
-                <button type="submit" className="n-hero__edit-submit">
-                  <span className="material-symbols-outlined">arrow_forward</span>
-                </button>
-              </form>
+              {removeConfirm ? (
+                <div className="n-hero__edit-confirm">
+                  <p>Remove the current photo and revert to the default image?</p>
+                  <div className="n-hero__edit-confirm-actions">
+                    <button className="n-hero__edit-confirm-btn" onClick={() => setRemoveConfirm(false)}>
+                      Cancel
+                    </button>
+                    <button
+                      className="n-hero__edit-confirm-btn n-hero__edit-confirm-btn--danger"
+                      onClick={handleRemovePhoto}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <button className="n-hero__edit-option" onClick={openAdjust}>
+                    <span className="material-symbols-outlined">tune</span>
+                    Adjust position &amp; fit
+                  </button>
+                  <div className="n-hero__edit-divider" />
+                  <label className="n-hero__edit-option">
+                    <span className="material-symbols-outlined">upload</span>
+                    Upload new image
+                    <input type="file" accept="image/*" hidden onChange={selectFile} />
+                  </label>
+                  <div className="n-hero__edit-divider" />
+                  <form className="n-hero__edit-url" onSubmit={submitUrl}>
+                    <input
+                      type="url"
+                      className="n-hero__edit-input"
+                      placeholder="Paste image URL…"
+                      value={urlVal}
+                      onChange={(e) => setUrlVal(e.target.value)}
+                      autoFocus
+                    />
+                    <button type="submit" className="n-hero__edit-submit">
+                      <span className="material-symbols-outlined">arrow_forward</span>
+                    </button>
+                  </form>
+                  {heroImageUrl && (
+                    <>
+                      <div className="n-hero__edit-divider" />
+                      <button
+                        className="n-hero__edit-option n-hero__edit-option--danger"
+                        onClick={() => setRemoveConfirm(true)}
+                      >
+                        <span className="material-symbols-outlined">delete</span>
+                        Remove photo
+                      </button>
+                    </>
+                  )}
+                </>
+              )}
             </div>
           )}
         </div>
@@ -527,116 +441,27 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, h
       <div className="n-hero__blur" aria-hidden="true">
         <div /><div /><div /><div />
       </div>
-      <div
-        className={`n-hero__inner${isAdmin ? ' n-hero__inner--editable' : ''}${displayText ? ' n-hero__inner--custom' : ''}`}
-        ref={innerRef}
-        style={displayText ? {
-          position: 'absolute',
-          left: `${displayText.x}%`,
-          top: `${displayText.y}%`,
-          // widthPct/heightPct describe the box's ON-SCREEN size; layout dimensions are
-          // divided by the text-size scale so the transform lands back on the intended
-          // box, and text wraps at the box's visual width regardless of font scale.
-          width: `${displayText.widthPct / displayText.scale}%`,
-          height: displayText.heightPct ? `${displayText.heightPct / displayText.scale}%` : undefined,
-          transform: `scale(${displayText.scale})`,
-          transformOrigin: 'top left',
-        } : undefined}
-      >
-        {isAdmin && (
-          <div className="n-hero__text-toolbar">
-            <button
-              className="n-hero__text-handle"
-              onPointerDown={startTextMove}
-              title="Drag to move"
-            >
-              <span className="material-symbols-outlined">open_with</span>
+      <div className="n-hero__inner">
+        <div className="n-hero__content">
+          <p className="n-hero__eyebrow" data-reveal="up" data-delay="0">
+            Research &amp; Strategy Studio
+          </p>
+          <h1 className="n-hero__h1" data-reveal="up" data-delay="80">
+            Not just another<br />research firm.
+          </h1>
+          <p className="n-hero__sub" data-reveal="up" data-delay="160">
+            We bridge the gap between what users say and what they mean — through
+            clinical observation, rigorous synthesis, and strategy.
+          </p>
+          <div className="n-hero__actions" data-reveal="up" data-delay="240">
+            <button className="n-btn n-btn--primary n-btn--lg" onClick={() => scrollToId('n-contact')}>
+              Start Engagement
             </button>
-            <div className="n-hero__text-size" title="Text size">
-              <button
-                type="button"
-                className="n-hero__text-size-step"
-                onClick={() => stepTextSize(-5)}
-                title="Decrease text size"
-              >
-                <span className="material-symbols-outlined">text_decrease</span>
-              </button>
-              <input
-                type="number"
-                min={50} max={220} step={5}
-                value={Math.round((displayText?.scale ?? 1) * 100)}
-                onChange={handleSizeInput}
-              />
-              <span className="n-hero__text-size-suffix">%</span>
-              <button
-                type="button"
-                className="n-hero__text-size-step"
-                onClick={() => stepTextSize(5)}
-                title="Increase text size"
-              >
-                <span className="material-symbols-outlined">text_increase</span>
-              </button>
-              <select
-                className="n-hero__text-size-preset"
-                title="Preset sizes"
-                value=""
-                onChange={(e) => { if (e.target.value) setTextScale(parseFloat(e.target.value) / 100) }}
-              >
-                <option value="" disabled>Presets</option>
-                {[50, 75, 100, 125, 150, 175, 200].map((p) => (
-                  <option key={p} value={p}>{p}%</option>
-                ))}
-              </select>
-            </div>
-            {heroTextSettings && (
-              <button
-                className="n-hero__text-reset"
-                onClick={handleTextReset}
-                title="Reset position &amp; size"
-              >
-                <span className="material-symbols-outlined">restart_alt</span>
-              </button>
-            )}
-          </div>
-        )}
-        {isAdmin && pendingText && (
-          <div className="n-hero__text-confirm">
-            <button className="n-hero__text-confirm-save" onClick={confirmTextEdit}>
-              <span className="material-symbols-outlined">check</span>
-              Save
-            </button>
-            <button className="n-hero__text-confirm-cancel" onClick={cancelTextEdit}>
-              Cancel
+            <button className="n-btn n-btn--ghost n-btn--lg" onClick={() => scrollToId('n-work')}>
+              View Archive
             </button>
           </div>
-        )}
-        <p className="n-hero__eyebrow" data-reveal="up" data-delay="0">
-          Research &amp; Strategy Studio
-        </p>
-        <h1 className="n-hero__h1" data-reveal="up" data-delay="80">
-          Not just another<br />research firm.
-        </h1>
-        <p className="n-hero__sub" data-reveal="up" data-delay="160">
-          We bridge the gap between what users say and what they mean — through
-          clinical observation, rigorous synthesis, and strategy.
-        </p>
-        <div className="n-hero__actions" data-reveal="up" data-delay="240">
-          <button className="n-btn n-btn--primary n-btn--lg" onClick={() => scrollToId('n-contact')}>
-            Start Engagement
-          </button>
-          <button className="n-btn n-btn--ghost n-btn--lg" onClick={() => scrollToId('n-work')}>
-            View Archive
-          </button>
         </div>
-        {isAdmin && RESIZE_HANDLES.map((h) => (
-          <div
-            key={h.pos}
-            className={`n-hero__text-resize n-hero__text-resize--${h.pos}`}
-            style={{ cursor: h.cursor }}
-            onPointerDown={(e) => startTextResize(e, h.pos)}
-            title="Drag to resize"
-          />
-        ))}
       </div>
     </section>
   )
@@ -1073,24 +898,17 @@ export default function LandingPage2({ onNavigate, theme, onToggleTheme }) {
 
   const [heroImageUrl, setHeroImageUrl] = useState(null)
   const [heroTextDark, setHeroTextDark] = useState(false)
-  const [heroSettings, setHeroSettings] = useState({ objectFit: 'cover', positionX: 50, positionY: 50, scale: 1, overlayOpacity: 0.38 })
-  const [heroTextSettings, setHeroTextSettings] = useState(null)
+  const [heroSettings, setHeroSettings] = useState(DEFAULT_HERO_SETTINGS)
 
   useEffect(() => {
     return onValue(dbRef(db, 'siteSettings/heroImageUrl'), (snap) => {
-      if (snap.exists()) setHeroImageUrl(snap.val())
+      setHeroImageUrl(snap.exists() ? snap.val() : null)
     })
   }, [])
 
   useEffect(() => {
     return onValue(dbRef(db, 'siteSettings/heroSettings'), (snap) => {
-      if (snap.exists()) setHeroSettings(snap.val())
-    })
-  }, [])
-
-  useEffect(() => {
-    return onValue(dbRef(db, 'siteSettings/heroTextSettings'), (snap) => {
-      setHeroTextSettings(snap.exists() ? snap.val() : null)
+      setHeroSettings(snap.exists() ? snap.val() : DEFAULT_HERO_SETTINGS)
     })
   }, [])
 
@@ -1107,14 +925,11 @@ export default function LandingPage2({ onNavigate, theme, onToggleTheme }) {
     setHeroSettings(settings)
   }
 
-  async function handleHeroTextSave(settings) {
-    await set(dbRef(db, 'siteSettings/heroTextSettings'), settings)
-    setHeroTextSettings(settings)
-  }
-
-  async function handleHeroTextReset() {
-    await remove(dbRef(db, 'siteSettings/heroTextSettings'))
-    setHeroTextSettings(null)
+  async function handleHeroRemove() {
+    await remove(dbRef(db, 'siteSettings/heroImageUrl'))
+    await remove(dbRef(db, 'siteSettings/heroSettings'))
+    setHeroImageUrl(null)
+    setHeroSettings(DEFAULT_HERO_SETTINGS)
   }
 
   return (
@@ -1127,9 +942,7 @@ export default function LandingPage2({ onNavigate, theme, onToggleTheme }) {
           heroTextDark={heroTextDark}
           heroSettings={heroSettings}
           onHeroSave={handleHeroSave}
-          heroTextSettings={heroTextSettings}
-          onHeroTextSave={handleHeroTextSave}
-          onHeroTextReset={handleHeroTextReset}
+          onHeroRemove={handleHeroRemove}
         />
         <Capabilities />
         <Process />

@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
 import LandingPage2 from './LandingPage2'
 import ProjectDetail from './ProjectDetail'
+import AboutFounder from './AboutFounder'
 
 function locationFromUrl() {
-  const match = window.location.pathname.match(/^\/case\/([^/]+)\/?$/)
-  return match ? { page: 'project', caseId: match[1] } : { page: 'home', caseId: null }
+  const path = window.location.pathname
+  const match = path.match(/^\/case\/([^/]+)\/?$/)
+  if (match) return { page: 'project', caseId: match[1] }
+  if (/^\/about\/?$/.test(path)) return { page: 'about', caseId: null }
+  return { page: 'home', caseId: null }
 }
 
 export default function App() {
@@ -46,6 +50,9 @@ export default function App() {
         onToggleTheme={toggleTheme}
       />
     )
+  }
+  if (page === 'about') {
+    return <AboutFounder theme={theme} onToggleTheme={toggleTheme} />
   }
   return <LandingPage2 onNavigate={navigate} theme={theme} onToggleTheme={toggleTheme} />
 }
