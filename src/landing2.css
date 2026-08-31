@@ -214,7 +214,7 @@
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 200;
-  padding: 24px 30px;
+  padding: 12px 30px;
   transition: background 0.4s, padding 0.3s;
 }
 
