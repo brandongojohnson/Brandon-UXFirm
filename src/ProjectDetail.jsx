@@ -665,7 +665,7 @@ export default function ProjectDetail({ onBack, caseId: initialCaseId = 'case-01
   }
 
   return (
-    <div className={`n${theme === 'light' ? ' n--light' : ''}`}>
+    <div className={`n${theme === 'light' ? ' n--light' : ''}`} style={{padding: "0 50px"}}>
       <ScrollProgress />
       <Navbar
         onBack={onBack}

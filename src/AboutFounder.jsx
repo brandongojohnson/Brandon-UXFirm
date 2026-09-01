@@ -1,4 +1,9 @@
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
+import { onAuthStateChanged } from 'firebase/auth'
+import { ref as dbRef, remove } from 'firebase/database'
+import { auth, db } from './firebase'
+import ProjectEditor from './ProjectEditor'
+import { useAllStudies, FeaturedWork } from './FeaturedWork'
 import './landing2.css'
 import './AboutFounder.css'
 import headshotImg from './headshot.jpg'
@@ -115,6 +120,36 @@ function Bio() {
   )
 }
 
+function Video() {
+  return (
+    <section className="af-video">
+      <div className="n-inner">
+        <div className="af-video__header" data-reveal="up">
+          <p className="n-eyebrow">Watch</p>
+          <h2 className="n-section-title">See the practice in motion.</h2>
+        </div>
+        <a
+          className="af-video__frame"
+          data-reveal="scale" data-delay="80"
+          href="https://youtu.be/w-OYUx1EWHY?t=10005"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Watch the video on YouTube"
+        >
+          <img
+            className="af-video__thumb"
+            src="https://img.youtube.com/vi/w-OYUx1EWHY/maxresdefault.jpg"
+            alt=""
+          />
+          <span className="af-video__play">
+            <span className="material-symbols-outlined">play_arrow</span>
+          </span>
+        </a>
+      </div>
+    </section>
+  )
+}
+
 function Background() {
   return (
     <section className="af-track">
@@ -185,19 +220,36 @@ function Footer() {
   )
 }
 
-export default function AboutFounder({ theme, onToggleTheme }) {
+export default function AboutFounder({ theme, onToggleTheme, onNavigate }) {
   useReveal()
+  const studies = useAllStudies()
+
+  const [user, setUser] = useState(null)
+  useEffect(() => onAuthStateChanged(auth, setUser), [])
+  const isAdmin = !!user
+
+  const [showProjectEditor, setShowProjectEditor] = useState(false)
+
   return (
     <div className={`n${theme === 'light' ? ' n--light' : ''}`}>
       <Header theme={theme} onToggleTheme={onToggleTheme} />
       <main>
         <Hero />
         <Bio />
+        <Video />
         <Background />
         <Values />
+        <FeaturedWork
+          studies={studies}
+          onNavigate={onNavigate}
+          isAdmin={isAdmin}
+          onAddProject={() => setShowProjectEditor(true)}
+          onDeleteProject={id => remove(dbRef(db, 'UXP/' + id))}
+        />
         <ContactStrip />
       </main>
       <Footer />
+      {showProjectEditor && <ProjectEditor studies={studies} onClose={() => setShowProjectEditor(false)} />}
     </div>
   )
 }

@@ -95,7 +95,6 @@
 .ph__inner {
   max-width: 1536px;
   margin: 0 auto;
-  padding: 0 var(--container-pad);
   display: flex;
   flex-direction: column;
   gap: 32px;

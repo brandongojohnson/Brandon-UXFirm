@@ -1,38 +1,36 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { ref as dbRef, onValue, set, remove } from 'firebase/database'
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { auth, db, storage } from './firebase'
+import { auth, db } from './firebase'
 import AuthModal from './AuthModal'
 import ProjectEditor from './ProjectEditor'
+import { useAllStudies, FeaturedWork } from './FeaturedWork'
 import './landing2.css'
 import heroImg from './hero-bg-2.jpg'
 import headshotImg from './headshot.jpg'
 
-function toArr(v) {
-  if (!v) return []
-  return Array.isArray(v) ? v : Object.values(v)
-}
-
-function useAllStudies() {
-  const [studies, setStudies] = useState(undefined)
-  useEffect(() => {
-    return onValue(
-      dbRef(db, 'UXP'),
-      (snap) => {
-        const val = snap.val()
-        if (val) {
-          setStudies(
-            Object.entries(val)
-              .sort(([a], [b]) => a.localeCompare(b))
-              .map(([id, data]) => ({ id, ...data, outcomes: toArr(data.outcomes) }))
-          )
-        } else { setStudies([]) }
-      },
-      () => setStudies([])
-    )
-  }, [])
-  return studies
+// Downscales and re-encodes the image so the base64 string saved to the database
+// stays a reasonable size — a raw phone photo can be 10MB+, which would otherwise
+// get embedded directly into every visitor's page load.
+function fileToDataUrl(file, maxDim = 2400, quality = 0.95) {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file)
+    const img = new Image()
+    img.onload = () => {
+      const scale = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight))
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.round(img.naturalWidth * scale)
+      canvas.height = Math.round(img.naturalHeight * scale)
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+      URL.revokeObjectURL(objectUrl)
+      resolve(canvas.toDataURL('image/jpeg', quality))
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl)
+      reject(new Error('Could not read that image file.'))
+    }
+    img.src = objectUrl
+  })
 }
 
 function useReveal() {
@@ -297,14 +295,7 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, o
     try {
       let url = pending.url || heroImageUrl
       if (pending.file) {
-        const sRef = storageRef(storage, `hero/${Date.now()}-${pending.file.name}`)
-        // Storage uploads can hang indefinitely on a bad connection with no error —
-        // bound it so the admin always gets a result instead of a stuck "Saving…" button.
-        const snap = await Promise.race([
-          uploadBytes(sRef, pending.file),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Upload timed out. Check your connection and try again.')), 30000)),
-        ])
-        url = await getDownloadURL(snap.ref)
+        url = await fileToDataUrl(pending.file)
       }
       await onHeroSave(url, pending.settings)
       if (pending.file) URL.revokeObjectURL(pending.src)
@@ -571,100 +562,6 @@ function Process() {
             </div>
           ))}
         </div>
-      </div>
-    </section>
-  )
-}
-
-/* ─── Featured Work ─── */
-function FeaturedWork({ studies, onNavigate, isAdmin, onAddProject, onDeleteProject }) {
-  const [confirmDelete, setConfirmDelete] = useState(null)
-
-  async function handleDeleteConfirm(id) {
-    await onDeleteProject?.(id)
-    setConfirmDelete(null)
-  }
-
-  useEffect(() => {
-    if (!studies) return
-    const obs = new IntersectionObserver(
-      (entries) => entries.forEach((e) => {
-        if (e.isIntersecting) { e.target.classList.add('is-visible'); obs.unobserve(e.target) }
-      }),
-      { threshold: 0.05, rootMargin: '0px 0px -40px 0px' }
-    )
-    document.querySelectorAll('[data-reveal]:not(.is-visible)').forEach((el) => obs.observe(el))
-    return () => obs.disconnect()
-  }, [studies])
-
-  return (
-    <section className="n-work" id="n-work">
-      <div className="n-inner">
-        <div className="n-work__header" data-reveal="up">
-          <div>
-            <p className="n-eyebrow">Featured work between ©2023–25</p>
-            <h2 className="n-section-title">Selected projects.</h2>
-          </div>
-          <div className="n-work__header-right">
-            <a href="#" className="n-text-link" onClick={(e) => e.preventDefault()}>
-              Discover all projects <span>→</span>
-            </a>
-            {isAdmin && (
-              <button className="n-btn n-btn--sm n-btn--outline" onClick={onAddProject}>
-                <span className="material-symbols-outlined" style={{ fontSize: 15 }}>add</span>
-                Add Project
-              </button>
-            )}
-          </div>
-        </div>
-
-        {studies === undefined && <p className="n-placeholder">Loading case studies…</p>}
-        {studies?.length === 0  && <p className="n-placeholder">No case studies yet.</p>}
-
-        {studies && studies.length > 0 && (
-          <div className="n-work__grid">
-            {studies.slice(0, 3).map((s, i) => (
-              <div key={s.id} className="n-wcard"
-                data-reveal="up" data-delay={i > 0 ? String(i * 80) : undefined}
-                onClick={() => confirmDelete !== s.id && onNavigate?.('project', s.id)}>
-                {s.imageUrl ? (
-                  <div className="n-wcard__img-wrap">
-                    <img src={s.imageUrl} alt={s.title} className="n-wcard__img" />
-                  </div>
-                ) : (
-                  <div className="n-wcard__img-placeholder" />
-                )}
-                <div className="n-wcard__body">
-                  <div className="n-wcard__top">
-                    <span className="n-eyebrow">{s.eyebrow || 'Research'}</span>
-                    <span className="n-wcard__arrow">→</span>
-                  </div>
-                  <h3 className="n-wcard__title">{s.title}</h3>
-                  {s.subtitle && <p className="n-wcard__desc">{s.subtitle}</p>}
-                </div>
-                {isAdmin && (
-                  <button
-                    className="n-wcard__delete"
-                    aria-label="Delete project"
-                    onClick={e => { e.stopPropagation(); setConfirmDelete(s.id) }}>
-                    <span className="material-symbols-outlined">delete</span>
-                  </button>
-                )}
-                {isAdmin && confirmDelete === s.id && (
-                  <div className="n-wcard__del-confirm" onClick={e => e.stopPropagation()}>
-                    <span>Delete this project?</span>
-                    <div className="n-wcard__del-actions">
-                      <button className="n-wcard__del-btn n-wcard__del-btn--cancel"
-                        onClick={() => setConfirmDelete(null)}>Cancel</button>
-                      <button className="n-wcard__del-btn n-wcard__del-btn--confirm"
-                        onClick={() => handleDeleteConfirm(s.id)}>Delete</button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </section>
   )

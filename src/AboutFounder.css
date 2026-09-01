@@ -124,6 +124,69 @@
   margin: 4px 0;
 }
 
+/* ─── Video ─── */
+
+.af-video {
+  padding: 0 0 120px;
+  border-bottom: 1px solid var(--border);
+}
+
+.af-video__header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 40px;
+  max-width: 640px;
+}
+
+.af-video__frame {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--border);
+}
+
+.af-video__thumb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.af-video__frame:hover .af-video__thumb { transform: scale(1.03); }
+
+.af-video__play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  backdrop-filter: blur(2px);
+  transition: transform 0.25s ease, background 0.25s ease;
+}
+
+.af-video__play .material-symbols-outlined { font-size: 32px; }
+
+.af-video__frame:hover .af-video__play {
+  transform: translate(-50%, -50%) scale(1.08);
+  background: var(--accent);
+}
+
 /* ─── Background timeline ─── */
 
 .af-track {
