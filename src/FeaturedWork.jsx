@@ -17,6 +17,7 @@ export function useAllStudies() {
         if (val) {
           setStudies(
             Object.entries(val)
+              .filter(([, data]) => !data.hidden)
               .sort(([a], [b]) => a.localeCompare(b))
               .map(([id, data]) => ({ id, ...data, outcomes: toArr(data.outcomes) }))
           )
@@ -31,6 +32,7 @@ export function useAllStudies() {
 /* ─── Featured Work ─── */
 export function FeaturedWork({ studies, onNavigate, isAdmin, onAddProject, onDeleteProject }) {
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [showAll, setShowAll] = useState(false)
 
   async function handleDeleteConfirm(id) {
     await onDeleteProject?.(id)
@@ -47,7 +49,7 @@ export function FeaturedWork({ studies, onNavigate, isAdmin, onAddProject, onDel
     )
     document.querySelectorAll('[data-reveal]:not(.is-visible)').forEach((el) => obs.observe(el))
     return () => obs.disconnect()
-  }, [studies])
+  }, [studies, showAll])
 
   return (
     <section className="n-work" id="n-work">
@@ -58,9 +60,11 @@ export function FeaturedWork({ studies, onNavigate, isAdmin, onAddProject, onDel
             <h2 className="n-section-title">Selected projects.</h2>
           </div>
           <div className="n-work__header-right">
-            <a href="#" className="n-text-link" onClick={(e) => e.preventDefault()}>
-              Discover all projects <span>→</span>
-            </a>
+            {studies && studies.length > 3 && (
+              <a href="#" className="n-text-link" onClick={(e) => { e.preventDefault(); setShowAll((v) => !v) }}>
+                {showAll ? 'Show fewer projects' : 'Discover all projects'} <span>→</span>
+              </a>
+            )}
             {isAdmin && (
               <button className="n-btn n-btn--sm n-btn--outline" onClick={onAddProject}>
                 <span className="material-symbols-outlined" style={{ fontSize: 15 }}>add</span>
@@ -75,7 +79,7 @@ export function FeaturedWork({ studies, onNavigate, isAdmin, onAddProject, onDel
 
         {studies && studies.length > 0 && (
           <div className="n-work__grid">
-            {studies.slice(0, 3).map((s, i) => (
+            {(showAll ? studies : studies.slice(0, 3)).map((s, i) => (
               <div key={s.id} className="n-wcard"
                 data-reveal="up" data-delay={i > 0 ? String(i * 80) : undefined}
                 onClick={() => confirmDelete !== s.id && onNavigate?.('project', s.id)}>

@@ -56,7 +56,10 @@ function useCaseStudies() {
       (snap) => {
         const val = snap.val()
         if (val) {
-          const list = Object.keys(val).sort()
+          const list = Object.entries(val)
+            .filter(([, data]) => !data.hidden)
+            .map(([id]) => id)
+            .sort()
           setStudies(list)
         } else {
           setStudies([])
