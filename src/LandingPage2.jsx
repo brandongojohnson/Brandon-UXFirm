@@ -94,7 +94,7 @@ function Navbar({ theme, onToggleTheme }) {
   return (
     <nav className={`n-nav${scrolled ? ' n-nav--scrolled' : ''}`}>
       <div className="n-nav__inner">
-        <a className="n-nav__logo" href="#">Methodic<sup className="n-sup">®</sup></a>
+        <a className="n-nav__logo" href="#">Brandon Johnson</a>
         <div className="n-nav__links">
           {NAV.map((l) => (
             <a key={l.label} href="#"

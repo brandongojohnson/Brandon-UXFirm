@@ -32,7 +32,7 @@ export function useAllStudies() {
 /* ─── Featured Work ─── */
 export function FeaturedWork({ studies, onNavigate, isAdmin, onAddProject, onDeleteProject }) {
   const [confirmDelete, setConfirmDelete] = useState(null)
-  const [showAll, setShowAll] = useState(false)
+  const [showAll, setShowAll] = useState(true)
 
   async function handleDeleteConfirm(id) {
     await onDeleteProject?.(id)

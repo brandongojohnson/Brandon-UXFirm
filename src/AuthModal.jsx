@@ -62,7 +62,7 @@ export default function AuthModal({ onClose }) {
       <div className="auth-modal" onClick={(e) => e.stopPropagation()}>
 
         <div className="auth-modal__header">
-          <span className="auth-modal__logo">Methodic</span>
+          <span className="auth-modal__logo">Brandon Johnson</span>
           <button className="auth-modal__close" onClick={onClose} aria-label="Close">
             <span className="material-symbols-outlined">close</span>
           </button>
@@ -89,7 +89,7 @@ export default function AuthModal({ onClose }) {
           {tab === 'google' && (
             <>
               <p className="auth-modal__desc">
-                Sign in with your Google account to access Methodic admin features.
+                Sign in with your Google account to access Brandon Johnson admin features.
               </p>
               <button className="auth-google-btn" onClick={handleGoogle} disabled={busy}>
                 {busy ? 'Signing in…' : 'Continue with Google'}

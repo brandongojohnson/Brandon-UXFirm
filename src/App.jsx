@@ -52,7 +52,7 @@ export default function App() {
     )
   }
   if (page === 'about') {
-    return <AboutFounder theme={theme} onToggleTheme={toggleTheme} onNavigate={navigate} />
+    return <AboutFounder theme={theme} onNavigate={navigate} />
   }
   return <LandingPage2 onNavigate={navigate} theme={theme} onToggleTheme={toggleTheme} />
 }
