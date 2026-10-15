@@ -52,7 +52,7 @@ export function FeaturedWork({ studies, onNavigate, isAdmin, onAddProject, onDel
   }, [studies, showAll])
 
   return (
-    <section className="n-work" id="n-work">
+    <section className="n-work" id="selected-work">
       <div className="n-inner">
         <div className="n-work__header" data-reveal="up">
           <div>

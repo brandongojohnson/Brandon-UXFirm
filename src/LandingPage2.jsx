@@ -78,7 +78,7 @@ function analyzeImageBrightness(src, onResult) {
 const NAV = [
   { label: 'Capabilities', id: 'n-capabilities' },
   { label: 'Process',      id: 'n-process' },
-  { label: 'Work',         id: 'n-work' },
+  { label: 'Work',         id: 'selected-work' },
   // { label: 'Proof',        id: 'n-proof' },
 ]
 
@@ -448,7 +448,7 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, o
             <button className="n-btn n-btn--primary n-btn--lg" onClick={() => scrollToId('n-contact')}>
               Start Engagement
             </button>
-            <button className="n-btn n-btn--ghost n-btn--lg" onClick={() => scrollToId('n-work')}>
+            <button className="n-btn n-btn--ghost n-btn--lg" onClick={() => scrollToId('selected-work')}>
               View Archive
             </button>
           </div>

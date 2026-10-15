@@ -129,12 +129,6 @@ function ScrollProgress() {
    Navbar
 ───────────────────────────────────── */
 
-const PD_NAV = [
-  { label: 'Capabilities', id: 'n-capabilities' },
-  { label: 'Process',      id: 'n-process' },
-  { label: 'Work',         id: 'n-work' },
-]
-
 function Navbar({ onBack, caseId, setCaseId, studies, onEdit, onExport, isAdmin, theme, onToggleTheme }) {
   const [scrolled, setScrolled] = useState(false)
 
@@ -149,16 +143,8 @@ function Navbar({ onBack, caseId, setCaseId, studies, onEdit, onExport, isAdmin,
       <div className="n-nav__inner">
         <a className="n-nav__logo" href="#"
           onClick={(e) => { e.preventDefault(); onBack() }}>
-          Methodic<sup className="n-sup">®</sup>
+          Brandon Johnson
         </a>
-        <div className="n-nav__links">
-          {PD_NAV.map((l) => (
-            <a key={l.label} href="#"
-              onClick={(e) => { e.preventDefault(); onBack() }}>
-              {l.label}
-            </a>
-          ))}
-        </div>
         <div className="n-nav__right">
           {studies?.length > 0 && (
             <select className="pd-nav__select" value={caseId}

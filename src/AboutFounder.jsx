@@ -38,7 +38,7 @@ function useReveal() {
 
 const heroStyle = {
   section: {
-    minHeight: '86vh',
+    minHeight: '100vh',
     display: 'flex',
     alignItems: 'center',
     padding: '160px 0 96px',
@@ -172,13 +172,184 @@ function Hero() {
           </div>
         </div> */}
 
-        {/* <a href="#n-work" style={heroStyle.scroll(scrollHover)}
-          onClick={(e) => { e.preventDefault(); scrollToId('n-work') }}
+        {/* <a href="#selected-work" style={heroStyle.scroll(scrollHover)}
+          onClick={(e) => { e.preventDefault(); scrollToId('selected-work') }}
           onMouseEnter={() => setScrollHover(true)}
           onMouseLeave={() => setScrollHover(false)}
           data-reveal="fade" data-delay="260">
           Selected work <span aria-hidden="true" style={heroStyle.scrollArrow(scrollHover)}>↓</span>
         </a> */}
+      </div>
+    </section>
+  )
+}
+
+const videoStyle = {
+  section: {
+    padding: '120px 0',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+  },
+  inner: {
+    maxWidth: 'var(--max)',
+    margin: '0 auto',
+    padding: '0 var(--pad)',
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 56,
+    boxSizing: 'border-box',
+  },
+  textCol: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 18,
+    flex: '1 1 360px',
+    maxWidth: 480,
+  },
+  eyebrow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    fontSize: 11,
+    fontWeight: 500,
+    letterSpacing: '0.14em',
+    textTransform: 'uppercase',
+    color: '#aaaaaa',
+  },
+  eyebrowDash: {
+    width: 28,
+    height: 1,
+    background: '#efefef',
+  },
+  title: {
+    fontFamily: 'var(--font-serif)',
+    fontSize: 'clamp(30px, 3.4vw, 42px)',
+    fontWeight: 400,
+    lineHeight: 1.15,
+    letterSpacing: '-0.02em',
+    color: '#efefef',
+    margin: 0,
+  },
+  description: {
+    fontSize: 15,
+    lineHeight: 1.72,
+    color: '#7a7979',
+    margin: 0,
+  },
+  watchLink: (hovered) => ({
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    fontSize: 13,
+    fontWeight: 500,
+    color: '#efefef',
+    textDecoration: 'underline',
+    textUnderlineOffset: '4px',
+    textDecorationColor: hovered ? '#efefef' : '#333333',
+    cursor: 'pointer',
+  }),
+  watchArrow: (hovered) => ({
+    display: 'inline-block',
+    transition: 'transform 0.25s var(--ease)',
+    transform: hovered ? 'translateX(3px)' : 'none',
+  }),
+  frameWrap: {
+    flex: '1 1 420px',
+    maxWidth: 560,
+    width: '100%',
+  },
+  frame: {
+    position: 'relative',
+    display: 'block',
+    width: '100%',
+    aspectRatio: '16 / 9',
+    borderRadius: 20,
+    overflow: 'hidden',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    background: 'rgba(255, 255, 255, 0.08)',
+  },
+  thumb: (hovered) => ({
+    position: 'absolute',
+    inset: 0,
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    display: 'block',
+    transform: hovered ? 'scale(1.04)' : 'scale(1)',
+    transition: 'transform 0.5s var(--ease)',
+  }),
+  play: (hovered) => ({
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: hovered ? 'translate(-50%, -50%) scale(1.08)' : 'translate(-50%, -50%) scale(1)',
+    width: 72,
+    height: 72,
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: hovered ? '#efefef' : 'rgba(0, 0, 0, 0.55)',
+    border: '1px solid rgba(255, 255, 255, 0.35)',
+    color: hovered ? '#0a0a0a' : '#fff',
+    transition: 'transform 0.3s var(--ease), background 0.3s var(--ease), color 0.3s var(--ease)',
+  }),
+}
+
+function Video() {
+  const [frameHover, setFrameHover] = useState(false)
+
+  return (
+    <section style={videoStyle.section}>
+      <div style={videoStyle.inner}>
+        <div style={videoStyle.textCol} data-reveal="up">
+          <p style={videoStyle.eyebrow}>
+            <span style={videoStyle.eyebrowDash} />
+            Watch
+          </p>
+          <h2 style={videoStyle.title}>See the practice in motion.</h2>
+          <p style={videoStyle.description}>
+            Turning Feedback into Actionable Insight explores how to transform feedback into
+            meaningful actions that drive improvement and growth. This talk will share practical
+            approaches for identifying key insights, prioritizing opportunities, and turning
+            feedback into clear, effective next steps.
+          </p>
+          <a
+            href="https://youtu.be/w-OYUx1EWHY?t=10003"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={videoStyle.watchLink(frameHover)}
+            onMouseEnter={() => setFrameHover(true)}
+            onMouseLeave={() => setFrameHover(false)}
+          >
+            Watch on YouTube <span aria-hidden="true" style={videoStyle.watchArrow(frameHover)}>→</span>
+          </a>
+        </div>
+
+        <div style={videoStyle.frameWrap} data-reveal="scale" data-delay="80">
+          <a
+            style={videoStyle.frame}
+            href="https://youtu.be/w-OYUx1EWHY?t=10003"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Watch the video on YouTube"
+            onMouseEnter={() => setFrameHover(true)}
+            onMouseLeave={() => setFrameHover(false)}
+          >
+            <img
+              style={videoStyle.thumb(frameHover)}
+              src="https://img.youtube.com/vi/w-OYUx1EWHY/maxresdefault.jpg"
+              alt=""
+            />
+            <span style={videoStyle.play(frameHover)}>
+              <span className="material-symbols-outlined">play_arrow</span>
+            </span>
+          </a>
+        </div>
       </div>
     </section>
   )
@@ -210,6 +381,7 @@ export default function AboutFounder({ theme, onNavigate }) {
     <div className={`n${theme === 'light' ? ' n--light' : ''}`}>
       <main>
         <Hero />
+        <Video />
         <FeaturedWork
           studies={studies}
           onNavigate={onNavigate}
