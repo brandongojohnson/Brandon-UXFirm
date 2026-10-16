@@ -44,8 +44,8 @@
   --bg-80:            rgba(19, 19, 19, 0.8);
 
   /* Typography */
-  --font-serif: 'IBM Plex Serif', Georgia, serif;
-  --font-sans:  'Geist', 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: var(--font-sans);
+  --font-sans:  'Onest', 'Helvetica Neue', Arial, sans-serif;
 
   /* Spacing */
   --container-pad: 64px;

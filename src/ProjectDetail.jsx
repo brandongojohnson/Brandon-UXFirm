@@ -143,7 +143,7 @@ function Navbar({ onBack, caseId, setCaseId, studies, onEdit, onExport, isAdmin,
       <div className="n-nav__inner">
         <a className="n-nav__logo" href="#"
           onClick={(e) => { e.preventDefault(); onBack() }}>
-          Brandon Johnson
+          Methodic Insights
         </a>
         <div className="n-nav__right">
           {studies?.length > 0 && (

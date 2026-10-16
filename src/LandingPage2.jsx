@@ -7,6 +7,8 @@ import ProjectEditor from './ProjectEditor'
 import { useAllStudies, FeaturedWork } from './FeaturedWork'
 import './landing2.css'
 import heroImg from './hero-bg-2.jpg'
+import GradientASCII from './GradientASCII'
+import Prism from './Prism'
 import headshotImg from './headshot.jpg'
 
 // Downscales and re-encodes the image so the base64 string saved to the database
@@ -94,7 +96,7 @@ function Navbar({ theme, onToggleTheme }) {
   return (
     <nav className={`n-nav${scrolled ? ' n-nav--scrolled' : ''}`}>
       <div className="n-nav__inner">
-        <a className="n-nav__logo" href="#">Brandon Johnson</a>
+        <a className="n-nav__logo" href="#">Methodic Insights</a>
         <div className="n-nav__links">
           {NAV.map((l) => (
             <a key={l.label} href="#"
@@ -229,6 +231,13 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, o
   const [removeConfirm, setRemoveConfirm] = useState(false)
   const wrapRef = useRef(null)
   const parallaxImgRef = useRef(null)
+  const [heroBg, setHeroBg] = useState(() => {
+    try { return localStorage.getItem('heroBg') === 'prism' ? 'prism' : 'ascii' } catch { return 'ascii' }
+  })
+  function switchHeroBg(next) {
+    setHeroBg(next)
+    try { localStorage.setItem('heroBg', next) } catch { /* ignore */ }
+  }
 
   useEffect(() => { if (!editOpen) setRemoveConfirm(false) }, [editOpen])
 
@@ -323,6 +332,19 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, o
 
   return (
     <section className={`n-hero${heroTextDark ? ' n-hero--light-img' : ''}`}>
+      <div className="n-hero__ascii" aria-hidden="true">
+        {heroBg === 'prism' ? <Prism /> : <GradientASCII
+          shape="rise"
+          characters=" .·•●"
+          clickEffect="burst"
+          cellSize={8}
+          density={0.05}
+          glyphOpacity={1}
+          gradientOpacity={0.82}
+          glow={0.75}
+          depthOfField={0.33}
+        />}
+      </div>
       <div className="n-hero__image" aria-hidden="true">
         <img
           ref={parallaxImgRef}
@@ -432,13 +454,23 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, o
       <div className="n-hero__blur" aria-hidden="true">
         <div /><div /><div /><div />
       </div>
+      <div className="n-hero__bg-switch" role="group" aria-label="Hero background">
+        {['ascii', 'prism'].map((b) => (
+          <button
+            key={b}
+            type="button"
+            className={`n-hero__bg-btn${heroBg === b ? ' is-active' : ''}`}
+            aria-pressed={heroBg === b}
+            onClick={() => switchHeroBg(b)}
+          >
+            {b === 'ascii' ? 'ASCII' : 'Prism'}
+          </button>
+        ))}
+      </div>
       <div className="n-hero__inner">
         <div className="n-hero__content">
-          <p className="n-hero__eyebrow" data-reveal="up" data-delay="0">
-            Research &amp; Strategy Studio
-          </p>
           <h1 className="n-hero__h1" data-reveal="up" data-delay="80">
-            Not just another<br />research firm.
+            Reframing the<br />User Experience.
           </h1>
           <p className="n-hero__sub" data-reveal="up" data-delay="160">
             We bridge the gap between what users say and what they mean — through

@@ -6,23 +6,23 @@
   --bg:         #000000;
   --surface:    rgba(255, 255, 255, 0.04);
   --surface-hi: rgba(255, 255, 255, 0.07);
-  --border:     rgba(255, 255, 255, 0.08);
+  --border:     rgba(255, 255, 255, 0.10);
   --border-hi:  rgba(255, 255, 255, 0.15);
   --text:       #efefef;
   --text-soft:  rgba(239, 239, 239, 0.75);
-  --muted:      #666;
+  --muted:      #8f8f8f;
   --dim:        #333;
   --quote:      rgba(239, 239, 239, 0.88);
   --faint:      rgba(255, 255, 255, 0.2);
   --faint-hi:   rgba(255, 255, 255, 0.28);
   --accent:     #aaaaaa;
-  --nav-bg:     rgba(0, 0, 0, 0.5);
-  --nav-link:   rgba(255, 255, 255, 0.45);
+  --nav-bg:     rgba(0, 0, 0, 0.72);
+  --nav-link:   rgba(255, 255, 255, 0.62);
   --nav-link-hover: #ffffff;
   --dropdown-bg: #111;
   --btn-primary-hover: #ffffff;
   --ease:       cubic-bezier(0.16, 1, 0.3, 1);
-  --font:       'Geist', 'Helvetica Neue', Arial, sans-serif;
+  --font:       'Onest', 'Helvetica Neue', Arial, sans-serif;
   --max:        1200px;
   --pad:        0px;
 
@@ -51,7 +51,7 @@
   --bg-40:            rgba(0, 0, 0, 0.4);
   --bg-80:            rgba(0, 0, 0, 0.8);
   --font-sans:        var(--font);
-  --font-serif:       'Hedvig Letters Serif', Georgia, 'Times New Roman', serif;
+  --font-serif:       var(--font);
   --container-pad:    var(--pad);
   --section-gap:      120px;
   --gutter:           24px;
@@ -73,7 +73,7 @@
   --bg:         #ffffff;
   --surface:    rgba(0, 0, 0, 0.035);
   --surface-hi: rgba(0, 0, 0, 0.06);
-  --border:     rgba(0, 0, 0, 0.09);
+  --border:     rgba(0, 0, 0, 0.12);
   --border-hi:  rgba(0, 0, 0, 0.16);
   --text:       #161616;
   --text-soft:  rgba(22, 22, 22, 0.65);
@@ -83,8 +83,8 @@
   --faint:      rgba(0, 0, 0, 0.18);
   --faint-hi:   rgba(0, 0, 0, 0.32);
   --accent:     #666666;
-  --nav-bg:     rgba(255, 255, 255, 0.5);
-  --nav-link:   rgba(0, 0, 0, 0.4);
+  --nav-bg:     rgba(255, 255, 255, 0.78);
+  --nav-link:   rgba(0, 0, 0, 0.62);
   --nav-link-hover: rgba(0, 0, 0, 0.9);
   --dropdown-bg: #ffffff;
   --btn-primary-hover: #000000;
@@ -112,19 +112,19 @@
 /* ─── Shared typography ─── */
 
 .n-eyebrow {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--accent);
 }
 
 .n-section-title {
   font-family: var(--font-serif);
-  font-size: 50px;
-  font-weight: 500;
-  line-height: 1.05;
-  letter-spacing: -0.01em;
+  font-size: clamp(32px, 4vw, 48px);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
   color: var(--text);
 }
 
@@ -215,7 +215,19 @@
   top: 0; left: 0; right: 0;
   z-index: 200;
   padding: 12px 30px;
+  background: var(--nav-bg);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
   transition: background 0.4s, padding 0.3s;
+}
+
+.n-nav:not(.n-nav--scrolled) {
+  /* At the very top: no bar */
+  background: none;
+  border-bottom-color: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .n-nav--scrolled {
@@ -223,34 +235,6 @@
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
   padding: 12px 30px;
-}
-
-.n--light .n-nav:not(.n-nav--scrolled) .n-nav__logo,
-.n--light .n-nav:not(.n-nav--scrolled) .n-nav__links a {
-  color: rgba(255, 255, 255, 0.82);
-}
-
-.n--light .n-nav:not(.n-nav--scrolled) .n-nav__links a:hover {
-  color: #ffffff;
-}
-
-.n--light .n-nav:not(.n-nav--scrolled) .n-btn--primary {
-  background: #ffffff;
-  color: #000000;
-  border-color: #ffffff;
-}
-.n--light .n-nav:not(.n-nav--scrolled) .n-btn--primary:hover {
-  background: rgba(255, 255, 255, 0.88);
-  border-color: rgba(255, 255, 255, 0.88);
-}
-
-.n--light .n-nav:not(.n-nav--scrolled) .n-theme-toggle {
-  color: rgba(255, 255, 255, 0.65);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-.n--light .n-nav:not(.n-nav--scrolled) .n-theme-toggle:hover {
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.45);
 }
 
 .n-nav__inner {
@@ -360,7 +344,7 @@
   align-items: center;
   justify-content: center;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   position: relative;
   flex-shrink: 0;
@@ -415,7 +399,7 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  text-align: left;
+  text-align: center;
   padding: 170px 0 140px;
 }
 
@@ -770,13 +754,14 @@
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   padding: 0 var(--pad);
   align-self: stretch;
   flex: 1;
-  justify-content: flex-end;
+  justify-content: center;
   position: relative;
   z-index: 5;
+  top:-50px;
 }
 
 .n-hero__eyebrow {
@@ -804,9 +789,10 @@
 .n-hero__content {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
+  text-align: center;
   gap: 22px;
-  max-width: min(440px, 44vw);
+  max-width: min(720px, 90vw);
 }
 
 .n-hero__h1 {
@@ -829,7 +815,7 @@
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  justify-content: flex-start;
+  justify-content: center;
   padding-top: 8px;
 }
 
@@ -845,7 +831,7 @@
 }
 .n-hero .n-btn--ghost {
   background: transparent;
-  border-color: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.55);
   color: rgba(255, 255, 255, 0.8);
 }
 .n-hero .n-btn--ghost:hover {
@@ -955,7 +941,7 @@
 
 .n-logos__item {
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--text-soft);
   transition: color 0.2s;
@@ -964,7 +950,7 @@
 /* ─── About ─── */
 
 .n-about {
-  padding: 120px 0;
+  padding: var(--section-gap) 0;
   border-bottom: 1px solid var(--border);
 }
 
@@ -1007,7 +993,7 @@
 /* ─── Capabilities ─── */
 
 .n-cap {
-  padding: 120px 0;
+  padding: var(--section-gap) 0;
   border-bottom: 1px solid var(--border);
 }
 
@@ -1061,7 +1047,7 @@
 /* ─── Process ─── */
 
 .n-process {
-  padding: 120px 0;
+  padding: var(--section-gap) 0;
   border-bottom: 1px solid var(--border);
 }
 
@@ -1101,7 +1087,7 @@
 
 .n-step__num {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.1em;
   color: var(--muted);
 }
@@ -1130,7 +1116,7 @@
 /* ─── Featured Work ─── */
 
 .n-work {
-  padding: 120px 0;
+  padding: var(--section-gap) 0;
   border-bottom: 1px solid var(--border);
 }
 
@@ -1318,7 +1304,7 @@
 
 .n-rating__score {
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text);
 }
 
@@ -1386,7 +1372,7 @@
   align-items: center;
   justify-content: center;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text);
   flex-shrink: 0;
 }
@@ -1415,7 +1401,7 @@
 
 .n-metric__val {
   font-size: 38px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.03em;
   color: var(--text);
   line-height: 1;
@@ -1430,7 +1416,7 @@
 /* ─── FAQ ─── */
 
 .n-faq {
-  padding: 120px 0;
+  padding: var(--section-gap) 0;
   border-bottom: 1px solid var(--border);
 }
 
@@ -1498,7 +1484,7 @@
 /* ─── Contact CTA ─── */
 
 .n-cta {
-  padding: 120px 0;
+  padding: var(--section-gap) 0;
   border-bottom: 1px solid var(--border);
 }
 
@@ -1680,7 +1666,7 @@
 }
 
 @media (max-width: 768px) {
-  .n { --pad: 24px; }
+  .n { --pad: 24px; --section-gap: 72px; }
   .n-nav { padding: 16px 0; }
   .n-nav__inner { padding: 0 24px; gap: 16px; }
   .n-nav__links { display: none; }
@@ -1696,7 +1682,7 @@
   .n-hero { padding: 120px 0 80px; min-height: unset; justify-content: flex-start; }
   .n-hero__inner { padding: 0 24px; max-width: 100%; flex: none; }
   .n-hero__content { max-width: 100%; }
-  .n-hero__h1 { font-size: clamp(52px, 14vw, 80px); }
+  .n-hero__h1 { font-size: clamp(34.1px, 9.87vw, 50.3px); }
   .n-hero__stem { height: 48px; margin-top: 40px; }
 
   .n-cap__grid { grid-template-columns: 1fr; }
@@ -1829,4 +1815,79 @@
   color: rgba(255,255,255,0.18);
   font-family: var(--font);
   white-space: pre-line;
+}
+
+/* ─── Hero: no background image, centered, theme-aware text ─── */
+.n-hero__image,
+.n-hero__blur,
+.n-hero__edit-wrap { display: none; }
+.n-hero__h1 { color: var(--text); }
+.n-hero__sub,
+.n-hero--light-img .n-hero__sub { color: #ffffff; }
+.n-hero__eyebrow { color: var(--text-soft); }
+.n-hero__eyebrow::before { background: var(--faint-hi); }
+.n-hero .n-btn--primary,
+.n-hero--light-img .n-btn--primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+.n-hero__eyebrow { text-transform: none; letter-spacing: 0.04em; font-size: 13.3px; }
+/* Hero typography — modern SaaS scale */
+.n-hero__content { max-width: min(860px, 92vw); gap: 24px; }
+.n-hero__eyebrow { font-size: 13.3px; font-weight: 500; }
+.n-hero__h1 {
+  font-size: clamp(35.9px, 5.39vw, 68.3px);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+}
+.n-hero__sub {
+  font-size: clamp(15.2px, 1.34vw, 18px);
+  font-weight: 400;
+  line-height: 1.55;
+  max-width: 620px;
+}
+
+/* Hero background — Gradient ASCII */
+.n-hero__ascii { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
+
+/* Hero text sits in the upper part of the hero, above the ASCII arc */
+.n-hero__inner { justify-content: flex-start; padding-top: 4vh; }
+@media (max-width: 768px) { .n-hero__inner { padding-top: 0; } }
+
+.n-hero .n-btn--lg { font-size: 13.4px; }
+
+/* Hero background switcher */
+.n-hero__bg-switch {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  z-index: 6;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border-hi);
+  border-radius: 8px;
+  background: var(--nav-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.n-hero__bg-btn {
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.n-hero__bg-btn:hover { color: var(--text); }
+.n-hero__bg-btn.is-active { background: var(--text); color: var(--bg); }
+
+/* Hero text: truly centered — symmetric padding, centered on mobile too */
+.n-hero { padding: 140px 0; }
+.n-hero__inner { justify-content: center; align-items: center; text-align: center; }
+.n-hero__content { margin: 0 auto; }
+@media (max-width: 768px) {
+  .n-hero { padding: 120px 0; justify-content: center; }
 }
