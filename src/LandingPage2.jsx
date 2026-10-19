@@ -9,6 +9,7 @@ import './landing2.css'
 import heroImg from './hero-bg-2.jpg'
 import GradientASCII from './GradientASCII'
 import Prism from './Prism'
+import Galaxy from './Galaxy'
 import headshotImg from './headshot.jpg'
 
 // Downscales and re-encodes the image so the base64 string saved to the database
@@ -221,7 +222,7 @@ function HeroImageEditor({ src, settings, onChange }) {
 const DEFAULT_HERO_SETTINGS = { objectFit: 'cover', positionX: 50, positionY: 50, scale: 1, overlayOpacity: 0.38 }
 
 /* ─── Hero ─── */
-function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, onHeroRemove }) {
+function Hero({ theme, isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, onHeroRemove }) {
   const imgSrc = heroImageUrl || heroImg
   const [editOpen, setEditOpen] = useState(false)
   const [urlVal,   setUrlVal]   = useState('')
@@ -231,8 +232,10 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, o
   const [removeConfirm, setRemoveConfirm] = useState(false)
   const wrapRef = useRef(null)
   const parallaxImgRef = useRef(null)
+  // Cap WebGL pixel ratio on phones — full device DPR is expensive and invisible on these backgrounds
+  const bgDpr = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches ? 1 : undefined
   const [heroBg, setHeroBg] = useState(() => {
-    try { return localStorage.getItem('heroBg') === 'prism' ? 'prism' : 'ascii' } catch { return 'ascii' }
+    try { return ['prism', 'galaxy', 'none'].includes(localStorage.getItem('heroBg')) ? localStorage.getItem('heroBg') : 'ascii' } catch { return 'ascii' }
   })
   function switchHeroBg(next) {
     setHeroBg(next)
@@ -333,7 +336,23 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, o
   return (
     <section className={`n-hero${heroTextDark ? ' n-hero--light-img' : ''}`}>
       <div className="n-hero__ascii" aria-hidden="true">
-        {heroBg === 'prism' ? <Prism /> : <GradientASCII
+        {heroBg === 'none' ? null : heroBg === 'galaxy' ? (
+          <Galaxy
+            dpr={bgDpr}
+            hueShift={167}
+            saturation={0.32}
+            density={1.6}
+            glowIntensity={0.34}
+            flareIntensity={1.65}
+            starSpeed={1.85}
+            speed={0.75}
+            mouseRepulsion={false}
+            repulsionStrength={2.7}
+            lightMode={theme === 'light'}
+          />
+        ) : heroBg === 'prism' ? <Prism dpr={bgDpr} timeScale={0.15} scale={3} lightMode={theme === 'light'} /> : <GradientASCII
+          dpr={bgDpr}
+          lightMode={theme === 'light'}
           shape="rise"
           characters=" .·•●"
           clickEffect="burst"
@@ -455,7 +474,7 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, o
         <div /><div /><div /><div />
       </div>
       <div className="n-hero__bg-switch" role="group" aria-label="Hero background">
-        {['ascii', 'prism'].map((b) => (
+        {['none', 'ascii', 'prism', 'galaxy'].map((b) => (
           <button
             key={b}
             type="button"
@@ -463,7 +482,7 @@ function Hero({ isAdmin, heroImageUrl, heroTextDark, heroSettings, onHeroSave, o
             aria-pressed={heroBg === b}
             onClick={() => switchHeroBg(b)}
           >
-            {b === 'ascii' ? 'ASCII' : 'Prism'}
+            {{ none: 'None', ascii: 'ASCII', prism: 'Prism', galaxy: 'Galaxy' }[b]}
           </button>
         ))}
       </div>
@@ -866,6 +885,7 @@ export default function LandingPage2({ onNavigate, theme, onToggleTheme }) {
       <Navbar theme={theme} onToggleTheme={onToggleTheme} />
       <main>
         <Hero
+          theme={theme}
           isAdmin={isAdmin}
           heroImageUrl={heroImageUrl}
           heroTextDark={heroTextDark}

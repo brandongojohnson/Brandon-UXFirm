@@ -18,13 +18,13 @@
 
 .af-footer__logo {
   font-family: var(--font-serif);
-  font-size: 16px;
+  font-size: 15.05px;
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--text);
 }
 
 .af-footer__copy {
-  font-size: 13px;
+  font-size: 12.23px;
   color: var(--muted);
 }
